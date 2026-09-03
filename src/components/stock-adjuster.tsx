@@ -126,7 +126,7 @@ export function StockAdjuster({
               className={inputCls}
             />
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full">
             <Button
               size="md"
               variant="outline"
@@ -134,6 +134,7 @@ export function StockAdjuster({
               onClick={() =>
                 adjust({ delta: amount, note: note || undefined }, `+${amount} unidades registradas`)
               }
+              className="flex-1 min-w-[80px]"
             >
               Añadir
             </Button>
@@ -144,6 +145,7 @@ export function StockAdjuster({
               onClick={() =>
                 adjust({ delta: -amount, note: note || undefined }, `-${amount} unidades registradas`)
               }
+              className="flex-1 min-w-[80px]"
             >
               Retirar
             </Button>
@@ -155,6 +157,7 @@ export function StockAdjuster({
                 adjust({ set: amount, note: note || undefined }, `Recuento fijado en ${amount}`)
               }
               title="Fijar como recuento físico exacto"
+              className="w-full sm:w-auto sm:flex-1"
             >
               {pending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

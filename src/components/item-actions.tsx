@@ -76,12 +76,12 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
           </div>
         </div>
 
-        <div className="flex gap-2 border-t border-line-soft pt-4">
-          <Button variant="dark" size="sm" onClick={() => setEditOpen(true)}>
+        <div className="flex flex-col sm:flex-row gap-2 border-t border-line-soft pt-4">
+          <Button variant="dark" size="sm" onClick={() => setEditOpen(true)} className="w-full justify-center">
             <PencilLine className="h-3.5 w-3.5" />
             Editar ficha
           </Button>
-          <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+          <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)} className="w-full justify-center">
             <Trash2 className="h-3.5 w-3.5" />
             Eliminar
           </Button>

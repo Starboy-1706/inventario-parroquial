@@ -108,7 +108,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </header>
 
       {/* ---------- Contenido ---------- */}
-      <main className="min-w-0 pb-24 lg:pb-0">{children}</main>
+      <main className="min-w-0 pb-28 lg:pb-0">{children}</main>
 
       {/* ---------- Barra de navegación inferior (móvil) ---------- */}
       <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">

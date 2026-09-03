@@ -118,6 +118,15 @@ body::before {
 }
 
 /* ---------- Impresión de etiquetas QR ---------- */
+/* ---------- Ajustes móviles específicos (max-width: 640px) ---------- */
+@media (max-width: 640px) {
+  /* Evitar desbordes horizontales de textos largos en tarjetas */
+  body { overflow-x: hidden; }
+  
+  /* Los botones en acción dentro de tarjetas ocupan todo el ancho disponible en móvil */
+  .flex.gap-2 { flex-wrap: wrap; }
+}
+
 @media print {
   body {
     background: #fff;
