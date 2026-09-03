@@ -8,6 +8,7 @@ import {
   Boxes,
   MapPinned,
   ScanLine,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/inventario", label: "Inventario", icon: Boxes },
   { href: "/zonas", label: "Zonas", icon: MapPinned },
   { href: "/escaner", label: "Escáner", icon: ScanLine },
+  { href: "/seguridad", label: "Seguridad", icon: ShieldCheck },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -112,7 +114,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
       {/* ---------- Barra de navegación inferior (móvil) ---------- */}
       <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-4 px-2">
+        <div className="mx-auto grid max-w-md grid-cols-5 px-2">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { items, movements, photos, zones } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { CONDITIONS, STATUSES } from "@/lib/constants";
+import { apiIpGuard } from "@/lib/access";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -13,6 +14,8 @@ async function parseId(ctx: Ctx) {
 }
 
 export async function GET(_request: NextRequest, ctx: Ctx) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
 
@@ -36,6 +39,8 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
 }
 
 export async function PATCH(request: NextRequest, ctx: Ctx) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
 
@@ -162,6 +167,8 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
 }
 
 export async function DELETE(_request: NextRequest, ctx: Ctx) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
 

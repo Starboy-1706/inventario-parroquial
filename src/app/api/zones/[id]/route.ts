@@ -4,6 +4,7 @@ import { items, photos, zones } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { slugify } from "@/lib/utils";
 import { ZONE_COLORS, ZONE_ICONS } from "@/lib/constants";
+import { apiIpGuard } from "@/lib/access";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -14,6 +15,8 @@ async function parseId(ctx: Ctx) {
 }
 
 export async function PATCH(_request: NextRequest, ctx: Ctx) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Zona no válida." }, { status: 400 });
 
@@ -80,6 +83,8 @@ export async function PATCH(_request: NextRequest, ctx: Ctx) {
 }
 
 export async function DELETE(_request: NextRequest, ctx: Ctx) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Zona no válida." }, { status: 400 });
 

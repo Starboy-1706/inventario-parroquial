@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { items, movements } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { apiIpGuard } from "@/lib/access";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -12,6 +13,8 @@ type Ctx = { params: Promise<{ id: string }> };
  *  - set:   recuento absoluto                      → AJUSTE
  */
 export async function POST(request: NextRequest, ctx: Ctx) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const { id: raw } = await ctx.params;
   const id = Number(raw);
   if (!Number.isInteger(id) || id <= 0) {

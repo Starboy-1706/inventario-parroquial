@@ -1,8 +1,13 @@
 import { Suspense } from "react";
 import { QrCode, Smartphone, Barcode } from "lucide-react";
 import { Scanner } from "@/components/scanner";
+import { pageMetadata, requireAuthorizedIp } from "@/lib/access";
 
-export const metadata = { title: "Escáner" };
+export async function generateMetadata() {
+  return pageMetadata("Escáner");
+}
+
+export const dynamic = "force-dynamic";
 
 const TIPS = [
   {
@@ -22,7 +27,8 @@ const TIPS = [
   },
 ];
 
-export default function EscanerPage() {
+export default async function EscanerPage() {
+  await requireAuthorizedIp();
   return (
     <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:py-12">
       <header className="animate-fade-up text-center">

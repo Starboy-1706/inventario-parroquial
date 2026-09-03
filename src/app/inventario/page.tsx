@@ -7,11 +7,14 @@ import { getItems } from "@/lib/queries";
 import { StatusBadge, TypeBadge } from "@/components/ui";
 import { EmptyState } from "@/components/empty-state";
 import { InventoryToolbar } from "@/components/inventory-toolbar";
+import { pageMetadata, requireAuthorizedIp } from "@/lib/access";
 import { cn, photoUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Inventario" };
+export async function generateMetadata() {
+  return pageMetadata("Inventario");
+}
 
 type SearchParams = Promise<{
   zona?: string;
@@ -25,6 +28,7 @@ export default async function InventarioPage({
 }: {
   searchParams: SearchParams;
 }) {
+  await requireAuthorizedIp();
   const sp = await searchParams;
   const [allZones, items] = await Promise.all([
     db.select().from(zones).orderBy(asc(zones.name)),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { photos } from "@/db/schema";
+import { apiIpGuard } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ const MAX_BYTES = 4 * 1024 * 1024; // 4 MB (el cliente comprime antes de subir)
  * despliegue cloud (el sistema de archivos de Vercel es efímero).
  */
 export async function POST(request: NextRequest) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   let formData: FormData;
   try {
     formData = await request.formData();

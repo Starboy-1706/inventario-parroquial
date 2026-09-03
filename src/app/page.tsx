@@ -20,8 +20,13 @@ import { getDashboardStats, getZonesWithCounts } from "@/lib/queries";
 import { cn, formatMoney, photoUrl, timeAgo } from "@/lib/utils";
 import { MOVEMENT_LABELS, type MovementType } from "@/lib/constants";
 import { StatusBadge, ZoneIcon } from "@/components/ui";
+import { pageMetadata, requireAuthorizedIp } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMetadata("Panel");
+}
 
 const MOVEMENT_ICONS: Record<MovementType, LucideIcon> = {
   ALTA: PlusCircle,
@@ -44,6 +49,7 @@ const MOVEMENT_TINT: Record<MovementType, string> = {
 };
 
 export default async function DashboardPage() {
+  await requireAuthorizedIp();
   const [stats, zones] = await Promise.all([
     getDashboardStats(),
     getZonesWithCounts(),

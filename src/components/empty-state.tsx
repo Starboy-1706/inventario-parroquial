@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
+/**
+ * Estado vacío — componente de SERVIDOR (sin "use client") para poder
+ * recibir el icono como función desde Server Components (p. ej. la página
+ * de inventario con cero resultados). Importado desde un Client Component
+ * pasa a formar parte del bundle de cliente sin problema.
+ */
 export function EmptyState({
   icon: Icon,
   title,

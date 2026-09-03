@@ -5,15 +5,20 @@ import { eq } from "drizzle-orm";
 import { getZonesWithCounts } from "@/lib/queries";
 import { slugify } from "@/lib/utils";
 import { ZONE_COLORS, ZONE_ICONS } from "@/lib/constants";
+import { apiIpGuard } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const data = await getZonesWithCounts();
   return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   try {
     const body = await request.json();
     const name = String(body.name ?? "").trim();

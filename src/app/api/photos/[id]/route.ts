@@ -2,11 +2,14 @@ import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { photos } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { apiIpGuard } from "@/lib/access";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 /** Sirve una fotografía almacenada en PostgreSQL, con caché inmutable. */
 export async function GET(_request: NextRequest, ctx: Ctx) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const { id: raw } = await ctx.params;
   const id = Number(raw);
   if (!Number.isInteger(id) || id <= 0) {

@@ -30,6 +30,22 @@ zonas**, con **códigos únicos escaneables (QR/barras)** por artículo y un
   ajuste, traslado, cambio de estado) queda registrada con fecha y nota, en
   **transacciones ACID**.
 
+## Seguridad (lista blanca por IP)
+
+- Tabla `allowed_ips` en PostgreSQL: solo los dispositivos cuya IP figura en
+  ella pueden **ver siquiera** la aplicación. El resto recibe una página 404
+  completamente en blanco — ni interfaz, ni JavaScript, ni metadatos, ni
+  datos en el payload. Sin nada en el navegador, no hay nada que manipular
+  desde la consola.
+- El filtro se aplica **en el servidor**: layout + cada página
+  (`requireAuthorizedIp`) + cada API (`apiIpGuard`, responde 404).
+- **Arranque (bootstrap):** con la tabla vacía, la app es abierta. En cuanto
+  autorizas la primera IP desde **/seguridad**, el bloqueo se activa.
+- Soporta IP exacta (`83.45.12.9`) y rangos CIDR (`83.45.12.0/24`).
+- Salvaguardas: no puedes borrar tu propia IP ni quedarte con la lista vacía.
+- Cabeceras endurecidas: `X-Frame-Options: DENY`, `nosniff`,
+  `Referrer-Policy` y `Permissions-Policy` (cámara solo dentro de la app).
+
 ## Stack
 
 | Capa             | Tecnología                                              |

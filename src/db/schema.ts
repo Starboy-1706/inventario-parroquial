@@ -114,7 +114,23 @@ export const movements = pgTable(
   (t) => [index("movements_item_idx").on(t.itemId)],
 );
 
+/**
+ * Lista blanca de acceso: solo las IPs autorizadas pueden ver la
+ * aplicación. Si la tabla está VACÍA, el filtro está en modo abierto
+ * (bootstrap) hasta añadir la primera IP.
+ */
+export const allowedIps = pgTable("allowed_ips", {
+  id: serial("id").primaryKey(),
+  // IP exacta ("83.45.12.9") o rango CIDR ("83.45.12.0/24")
+  ip: text("ip").notNull().unique(),
+  label: text("label"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export type Zone = typeof zones.$inferSelect;
 export type Item = typeof items.$inferSelect;
 export type Movement = typeof movements.$inferSelect;
 export type Photo = typeof photos.$inferSelect;
+export type AllowedIp = typeof allowedIps.$inferSelect;

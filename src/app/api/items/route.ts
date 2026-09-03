@@ -5,10 +5,13 @@ import { eq } from "drizzle-orm";
 import { getItems } from "@/lib/queries";
 import { CATEGORIES, CONDITIONS, STATUSES } from "@/lib/constants";
 import { zonePrefix } from "@/lib/utils";
+import { apiIpGuard } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const sp = request.nextUrl.searchParams;
   const data = await getItems({
     zoneId: sp.get("zone") ? Number(sp.get("zone")) : undefined,
@@ -76,6 +79,8 @@ function parseItemBody(body: Record<string, unknown>) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await apiIpGuard();
+  if (denied) return denied;
   const body = await request.json();
   const parsed = parseItemBody(body);
   if ("error" in parsed) {
