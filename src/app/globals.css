@@ -129,13 +129,21 @@ body::before {
 
 @media print {
   body {
-    background: #fff;
+    background: #fff !important;
+    color: #000 !important;
   }
   body::before {
-    display: none;
+    display: none !important;
   }
+  aside,
+  header,
+  nav,
   .no-print {
     display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
   }
   .print-area {
     position: absolute !important;
@@ -143,6 +151,12 @@ body::before {
     display: flex !important;
     align-items: center;
     justify-content: center;
+  }
+  ul {
+    box-shadow: none !important;
+  }
+  li {
+    page-break-inside: avoid;
   }
 }
 .print-area {

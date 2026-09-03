@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Coins,
   Landmark,
+  MapPinned,
   PackagePlus,
   PlusCircle,
   RefreshCcw,
@@ -165,60 +166,78 @@ export default async function DashboardPage() {
               Gestionar →
             </Link>
           </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {zones.map((z) => {
-              const zPhoto = photoUrl(z.photoId);
-              return (
-                <Link
-                  key={z.id}
-                  href={`/inventario?zona=${z.id}`}
-                  className="group relative overflow-hidden rounded-2xl border border-line bg-cream shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
-                >
-                  <span
-                    className="absolute inset-x-0 top-0 z-10 h-1 opacity-80"
-                    style={{ backgroundColor: z.color }}
-                  />
-                  {zPhoto && (
-                    <div className="relative h-28 w-full overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={zPhoto}
-                        alt={`Fotografía de ${z.name}`}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <span className="absolute inset-0 bg-gradient-to-t from-ink/45 via-transparent to-transparent" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      {zPhoto ? (
-                        <span className={cn(zPhoto && "-mt-9 rounded-2xl bg-cream p-1 shadow-lift", "relative")}>
+          {zones.length === 0 ? (
+            <div className="mt-4 rounded-3xl border border-dashed border-line bg-cream/70 p-8 text-center">
+              <MapPinned className="mx-auto h-8 w-8 text-gold/70" />
+              <p className="mt-3 font-display text-base font-semibold text-ink">
+                Aún no hay zonas creadas
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-xs text-ink-soft">
+                Crea tu primera ubicación (ej. Sacristía, Despacho) para clasificar el inventario.
+              </p>
+              <Link
+                href="/zonas"
+                className="mt-4 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-xs font-semibold text-cream transition hover:bg-ink/85"
+              >
+                Crear primera zona →
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {zones.map((z) => {
+                const zPhoto = photoUrl(z.photoId);
+                return (
+                  <Link
+                    key={z.id}
+                    href={`/inventario?zona=${z.id}`}
+                    className="group relative overflow-hidden rounded-2xl border border-line bg-cream shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
+                  >
+                    <span
+                      className="absolute inset-x-0 top-0 z-10 h-1 opacity-80"
+                      style={{ backgroundColor: z.color }}
+                    />
+                    {zPhoto && (
+                      <div className="relative h-28 w-full overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={zPhoto}
+                          alt={`Fotografía de ${z.name}`}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <span className="absolute inset-0 bg-gradient-to-t from-ink/45 via-transparent to-transparent" />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        {zPhoto ? (
+                          <span className={cn(zPhoto && "-mt-9 rounded-2xl bg-cream p-1 shadow-lift", "relative")}>
+                            <ZoneIcon icon={z.icon} color={z.color} />
+                          </span>
+                        ) : (
                           <ZoneIcon icon={z.icon} color={z.color} />
+                        )}
+                        <ArrowUpRight className="h-4 w-4 text-ink-faint opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                      </div>
+                      <h3 className="mt-3.5 font-display text-lg font-semibold leading-tight text-ink">
+                        {z.name}
+                      </h3>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-ink-soft">
+                        {z.description ?? "—"}
+                      </p>
+                      <p className="mt-3 flex items-baseline gap-1.5 text-xs text-ink-soft">
+                        <span className="font-display text-xl font-semibold text-ink">
+                          {z.itemCount}
                         </span>
-                      ) : (
-                        <ZoneIcon icon={z.icon} color={z.color} />
-                      )}
-                      <ArrowUpRight className="h-4 w-4 text-ink-faint opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                        artículos
+                        <span className="text-ink-faint">·</span>
+                        <span className="font-semibold text-ink">{z.unitCount}</span> uds.
+                      </p>
                     </div>
-                    <h3 className="mt-3.5 font-display text-lg font-semibold leading-tight text-ink">
-                      {z.name}
-                    </h3>
-                    <p className="mt-0.5 line-clamp-1 text-xs text-ink-soft">
-                      {z.description ?? "—"}
-                    </p>
-                    <p className="mt-3 flex items-baseline gap-1.5 text-xs text-ink-soft">
-                      <span className="font-display text-xl font-semibold text-ink">
-                        {z.itemCount}
-                      </span>
-                      artículos
-                      <span className="text-ink-faint">·</span>
-                      <span className="font-semibold text-ink">{z.unitCount}</span> uds.
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* ---------- Alertas + actividad ---------- */}
@@ -270,35 +289,41 @@ export default async function DashboardPage() {
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
               Últimos movimientos
             </h2>
-            <ul className="mt-4 space-y-0.5 border-l border-line pl-0">
-              {stats.recentMovements.map((m) => {
-                const Icon = MOVEMENT_ICONS[m.type as MovementType] ?? ClipboardList;
-                return (
-                  <li
-                    key={m.id}
-                    className="relative flex items-start gap-3 rounded-r-xl py-2.5 pl-5 pr-2 transition hover:bg-cream/80"
-                  >
-                    <span
-                      className={`absolute -left-[1.02rem] top-3 flex h-8 w-8 items-center justify-center rounded-full border border-line ${MOVEMENT_TINT[m.type as MovementType] ?? MOVEMENT_TINT.ESTADO}`}
+            {stats.recentMovements.length === 0 ? (
+              <p className="mt-4 rounded-2xl border border-dashed border-line bg-cream/70 px-4 py-6 text-sm text-ink-soft">
+                Aún no hay movimientos registrados. Las altas, cambios de estado y recuentos aparecerán aquí.
+              </p>
+            ) : (
+              <ul className="mt-4 space-y-0.5 border-l border-line pl-0">
+                {stats.recentMovements.map((m) => {
+                  const Icon = MOVEMENT_ICONS[m.type as MovementType] ?? ClipboardList;
+                  return (
+                    <li
+                      key={m.id}
+                      className="relative flex items-start gap-3 rounded-r-xl py-2.5 pl-5 pr-2 transition hover:bg-cream/80"
                     >
-                      <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-ink">
-                        {m.itemName}
-                      </p>
-                      <p className="truncate text-xs text-ink-soft">
-                        {MOVEMENT_LABELS[m.type as MovementType] ?? m.type}
-                        {m.note ? ` · ${m.note}` : ""}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[0.68rem] font-medium text-ink-faint">
-                      {timeAgo(m.createdAt)}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+                      <span
+                        className={`absolute -left-[1.02rem] top-3 flex h-8 w-8 items-center justify-center rounded-full border border-line ${MOVEMENT_TINT[m.type as MovementType] ?? MOVEMENT_TINT.ESTADO}`}
+                      >
+                        <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-ink">
+                          {m.itemName}
+                        </p>
+                        <p className="truncate text-xs text-ink-soft">
+                          {MOVEMENT_LABELS[m.type as MovementType] ?? m.type}
+                          {m.note ? ` · ${m.note}` : ""}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[0.68rem] font-medium text-ink-faint">
+                        {timeAgo(m.createdAt)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
         </div>
       </div>

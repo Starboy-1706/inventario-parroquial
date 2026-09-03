@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { PackagePlus, Search } from "lucide-react";
+import { Download, PackagePlus, Printer, Search } from "lucide-react";
 import type { Zone } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
@@ -70,10 +70,30 @@ export function InventoryToolbar({ zones }: { zones: Zone[] }) {
           <option value="MANTENIMIENTO">Mantenimiento</option>
           <option value="BAJA">Dado de baja</option>
         </select>
-        <Button variant="dark" onClick={() => setFormOpen(true)}>
-          <PackagePlus className="h-4 w-4" />
-          Nuevo artículo
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <a
+            href="/api/export"
+            download
+            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-line bg-cream px-3.5 py-2.5 text-xs font-semibold text-ink shadow-card transition hover:border-ink/30"
+            title="Descargar inventario en CSV (compatible con Excel)"
+          >
+            <Download className="h-3.5 w-3.5 text-gold-deep" />
+            <span className="hidden sm:inline">Exportar CSV</span>
+          </a>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-line bg-cream px-3.5 py-2.5 text-xs font-semibold text-ink shadow-card transition hover:border-ink/30"
+            title="Imprimir listado para auditoría física"
+          >
+            <Printer className="h-3.5 w-3.5 text-ink-soft" />
+            <span className="hidden sm:inline">Imprimir</span>
+          </button>
+          <Button variant="dark" onClick={() => setFormOpen(true)}>
+            <PackagePlus className="h-4 w-4" />
+            Nuevo artículo
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

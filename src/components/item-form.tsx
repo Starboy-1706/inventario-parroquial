@@ -3,11 +3,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, PackagePlus, Save } from "lucide-react";
+import Link from "next/link";
 import { CATEGORIES, CONDITIONS, CONDITION_LABELS, STATUSES, STATUS_LABELS } from "@/lib/constants";
 import type { Item, Zone } from "@/db/schema";
 import { Button, Field, Modal, inputCls } from "@/components/ui";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { cn } from "@/lib/utils";
+import { TriangleAlert } from "lucide-react";
 
 export type ItemEditable = Partial<Item> & { id?: number };
 
@@ -110,20 +112,39 @@ export function ItemForm({
             </Field>
           </div>
 
-          <Field label="Zona de la parroquia">
-            <select
-              name="zoneId"
-              required
-              defaultValue={item?.zoneId ?? defaultZoneId ?? zones[0]?.id}
-              className={inputCls}
-            >
-              {zones.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+          {zones.length === 0 ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-xs leading-relaxed text-amber-900 sm:col-span-2">
+              <p className="flex items-center gap-1.5 font-bold text-amber-950">
+                <TriangleAlert className="h-4 w-4 shrink-0 text-amber-700" />
+                No hay zonas creadas todavía
+              </p>
+              <p className="mt-1">
+                Cada artículo debe pertenecer a una ubicación física (ej. Sacristía, Despacho, Salón Parroquial).
+              </p>
+              <Link
+                href="/zonas"
+                onClick={onClose}
+                className="mt-2.5 inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-[0.68rem] text-gold-deep hover:text-gold"
+              >
+                Crear una zona primero →
+              </Link>
+            </div>
+          ) : (
+            <Field label="Zona de la parroquia">
+              <select
+                name="zoneId"
+                required
+                defaultValue={item?.zoneId ?? defaultZoneId ?? zones[0]?.id}
+                className={inputCls}
+              >
+                {zones.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
 
           <Field label="Tipo de control">
             <div className="grid grid-cols-2 gap-2">
@@ -275,7 +296,11 @@ export function ItemForm({
           <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
             Cancelar
           </Button>
-          <Button type="submit" variant="dark" disabled={pending}>
+          <Button
+            type="submit"
+            variant="dark"
+            disabled={pending || (zones.length === 0 && !editing)}
+          >
             {pending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : editing ? (
