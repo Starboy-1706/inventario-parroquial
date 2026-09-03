@@ -20,10 +20,12 @@ export function AllowlistManager({
   rows,
   clientIp,
   attempts,
+  schemaReady,
 }: {
   rows: AllowedIp[];
   clientIp: string;
   attempts: AccessAttempt[];
+  schemaReady: boolean;
 }) {
   const router = useRouter();
   const [ip, setIp] = useState("");
@@ -96,6 +98,29 @@ export function AllowlistManager({
 
   return (
     <div className="space-y-6">
+      {/* Aviso: tablas de seguridad no creadas aún en la base remota */}
+      {!schemaReady && (
+        <div className="rounded-2xl border border-red-200 bg-red-50/80 px-4 py-4 text-sm leading-relaxed">
+          <p className="flex items-center gap-2 font-bold text-red-800">
+            <TriangleAlert className="h-4.5 w-4.5 shrink-0" />
+            Las tablas de seguridad no existen todavía en la base de datos
+          </p>
+          <p className="mt-2 text-ink-soft">
+            La aplicación funciona en modo abierto de momentáneo. Para activar
+            el bloqueo por IP, abre una terminal (p. ej. GitHub Codespaces) en
+            tu repositorio y ejecuta:
+          </p>
+          <pre className="mt-2.5 overflow-x-auto rounded-xl bg-ink px-4 py-3 font-mono text-[0.72rem] leading-relaxed text-cream">
+{`export DATABASE_URL="postgresql://postgres.TU-REF:TU-CLAVE@aws-0-….pooler.supabase.com:5432/postgres"
+npx drizzle-kit push`}
+          </pre>
+          <p className="mt-2 text-ink-soft">
+            Cuando veas «[✓] Changes applied», recarga esta página y autoriza tu
+            dispositivo.
+          </p>
+        </div>
+      )}
+
       {/* Estado del filtro */}
       <div
         className={

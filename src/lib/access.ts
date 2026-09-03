@@ -73,6 +73,23 @@ export function isValidIpEntry(value: string): boolean {
   return /^[0-9a-fA-F:]{2,45}$/.test(v) && v.includes(":");
 }
 
+/**
+ * Detecta el error PostgreSQL "la tabla no existe todavía" (42P01),
+ * recorriendo la cadena de causas (Drizzle envuelve el error del driver:
+ * el código vive en error.cause, no en el error exterior).
+ */
+export function isMissingRelation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; depth < 6 && current; depth++) {
+    if (typeof current !== "object") break;
+    const e = current as { code?: string; message?: string; cause?: unknown };
+    if (e.code === "42P01") return true;
+    if (e.message && /relation .* does not exist/i.test(e.message)) return true;
+    current = e.cause;
+  }
+  return false;
+}
+
 export async function isAuthorizedIp(): Promise<boolean> {
   const { ip, present } = await getClientIp();
   if (!present) return true; // entorno local
@@ -83,8 +100,16 @@ export async function isAuthorizedIp(): Promise<boolean> {
     if (rows.length === 0) return true; // modo abierto de arranque
     return rows.some((r) => ipMatches(r.ip, ip));
   } catch (error) {
+    if (isMissingRelation(error)) {
+      // Las tablas de seguridad aún no se crearon (falta `drizzle-kit push`
+      // sobre la base remota): comportamiento bootstrap = modo abierto.
+      console.error(
+        "[security] Tabla allowed_ips ausente en la base de datos. Ejecuta `drizzle-kit push` para activar el bloqueo por IP.",
+      );
+      return true;
+    }
     console.error("[security] Error consultando lista blanca:", error);
-    return false; // fail closed
+    return false; // ante errores reales de conexión, fail closed
   }
 }
 
@@ -147,4 +172,33 @@ export async function pageMetadata(title: string): Promise<Metadata> {
   const allowed = await isAuthorizedIp();
   if (allowed) return { title };
   return { title: { absolute: "404" } };
+}
+
+/**
+ * Lectura tolerante del estado de seguridad: si las tablas aún no existen
+ * en la base remota, informa con `schemaReady: false` en lugar de romper
+ * la página (el panel muestra las instrucciones para crearlas).
+ */
+export async function getSecuritySnapshot(): Promise<{
+  rows: (typeof allowedIps.$inferSelect)[];
+  attempts: (typeof accessAttempts.$inferSelect)[];
+  schemaReady: boolean;
+}> {
+  const { asc, desc } = await import("drizzle-orm");
+  try {
+    const [rows, attempts] = await Promise.all([
+      db.select().from(allowedIps).orderBy(asc(allowedIps.createdAt)),
+      db
+        .select()
+        .from(accessAttempts)
+        .orderBy(desc(accessAttempts.createdAt))
+        .limit(12),
+    ]);
+    return { rows, attempts, schemaReady: true };
+  } catch (error) {
+    if (isMissingRelation(error)) {
+      return { rows: [], attempts: [], schemaReady: false };
+    }
+    throw error;
+  }
 }

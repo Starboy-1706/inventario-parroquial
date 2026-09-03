@@ -1,7 +1,4 @@
-import { asc, desc } from "drizzle-orm";
-import { db } from "@/db";
-import { accessAttempts, allowedIps } from "@/db/schema";
-import { getClientIp, pageMetadata, requireAuthorizedIp } from "@/lib/access";
+import { getClientIp, getSecuritySnapshot, pageMetadata, requireAuthorizedIp } from "@/lib/access";
 import { AllowlistManager } from "@/components/allowlist-manager";
 
 export const dynamic = "force-dynamic";
@@ -12,14 +9,9 @@ export async function generateMetadata() {
 
 export default async function SeguridadPage() {
   await requireAuthorizedIp();
-  const [rows, client, attempts] = await Promise.all([
-    db.select().from(allowedIps).orderBy(asc(allowedIps.createdAt)),
+  const [{ rows, attempts, schemaReady }, client] = await Promise.all([
+    getSecuritySnapshot(),
     getClientIp(),
-    db
-      .select()
-      .from(accessAttempts)
-      .orderBy(desc(accessAttempts.createdAt))
-      .limit(12),
   ]);
 
   return (
@@ -40,7 +32,12 @@ export default async function SeguridadPage() {
       </header>
 
       <div className="mt-8 animate-fade-up" style={{ animationDelay: "140ms" }}>
-        <AllowlistManager rows={rows} clientIp={client.ip} attempts={attempts} />
+        <AllowlistManager
+          rows={rows}
+          clientIp={client.ip}
+          attempts={attempts}
+          schemaReady={schemaReady}
+        />
       </div>
 
       <div className="no-print mt-8 rounded-3xl border border-line bg-cream/70 p-5 text-xs leading-relaxed text-ink-soft sm:p-6">

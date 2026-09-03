@@ -2,18 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { allowedIps } from "@/db/schema";
-import { apiIpGuard, getClientIp, isValidIpEntry } from "@/lib/access";
+import { apiIpGuard, getClientIp, isMissingRelation, isValidIpEntry } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
+
+const SCHEMA_HINT =
+  "La tabla de la lista blanca no existe en la base de datos. Ejecuta `npx drizzle-kit push` con tu DATABASE_URL y recarga.";
 
 export async function GET() {
   const denied = await apiIpGuard();
   if (denied) return denied;
-  const [rows, client] = await Promise.all([
-    db.select().from(allowedIps).orderBy(asc(allowedIps.createdAt)),
-    getClientIp(),
-  ]);
-  return NextResponse.json({ rows, clientIp: client.ip, enforce: rows.length > 0 });
+  try {
+    const [rows, client] = await Promise.all([
+      db.select().from(allowedIps).orderBy(asc(allowedIps.createdAt)),
+      getClientIp(),
+    ]);
+    return NextResponse.json({ rows, clientIp: client.ip, enforce: rows.length > 0 });
+  } catch (error) {
+    if (isMissingRelation(error)) {
+      return NextResponse.json({ error: SCHEMA_HINT, schemaReady: false }, { status: 503 });
+    }
+    throw error;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -43,7 +53,10 @@ export async function POST(request: NextRequest) {
       .values({ ip, label })
       .returning();
     return NextResponse.json(row, { status: 201 });
-  } catch {
+  } catch (error) {
+    if (isMissingRelation(error)) {
+      return NextResponse.json({ error: SCHEMA_HINT, schemaReady: false }, { status: 503 });
+    }
     return NextResponse.json({ error: "Esa IP ya está autorizada." }, { status: 409 });
   }
 }
