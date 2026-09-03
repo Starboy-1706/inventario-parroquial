@@ -2,8 +2,9 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { NextResponse } from "next/server";
+import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { allowedIps } from "@/db/schema";
+import { accessAttempts, allowedIps } from "@/db/schema";
 
 /**
  * Control de acceso por lista blanca de IPs almacenada en PostgreSQL.
@@ -87,10 +88,39 @@ export async function isAuthorizedIp(): Promise<boolean> {
   }
 }
 
+/**
+ * Marca un acceso denegado (best-effort, nunca rompe la petición).
+ * Antirrebote: una entrada por IP cada 5 min; poda de más de 7 días.
+ */
+export async function logAccessAttempt(): Promise<void> {
+  try {
+    const { ip, present } = await getClientIp();
+    if (!present) return;
+    const fresh = new Date(Date.now() - 5 * 60 * 1000);
+    const [existing] = await db
+      .select({ id: accessAttempts.id })
+      .from(accessAttempts)
+      .where(
+        and(eq(accessAttempts.ip, ip), gt(accessAttempts.createdAt, fresh)),
+      )
+      .limit(1);
+    if (!existing) {
+      await db.insert(accessAttempts).values({ ip });
+    }
+    await db
+      .delete(accessAttempts)
+      .where(lt(accessAttempts.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)));
+  } catch {
+    // silencioso: el registro no debe interferir con la defensa
+  }
+  void sql;
+}
+
 /** Guarda para API routes: null si autorizado, 404 invisible si no. */
 export async function apiIpGuard(): Promise<NextResponse | null> {
   const allowed = await isAuthorizedIp();
   if (allowed) return null;
+  await logAccessAttempt();
   return new NextResponse(null, {
     status: 404,
     headers: { "X-Content-Type-Options": "nosniff" },

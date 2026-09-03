@@ -115,6 +115,23 @@ export const movements = pgTable(
 );
 
 /**
+ * Registro de intentos de acceso denegados: permite autorizar dispositivos
+ * nuevos con un clic desde /seguridad, sin transcribir IPs a mano.
+ * Se podan automáticamente (7 días).
+ */
+export const accessAttempts = pgTable(
+  "access_attempts",
+  {
+    id: serial("id").primaryKey(),
+    ip: text("ip").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("access_attempts_ip_idx").on(t.ip)],
+);
+
+/**
  * Lista blanca de acceso: solo las IPs autorizadas pueden ver la
  * aplicación. Si la tabla está VACÍA, el filtro está en modo abierto
  * (bootstrap) hasta añadir la primera IP.
@@ -134,3 +151,4 @@ export type Item = typeof items.$inferSelect;
 export type Movement = typeof movements.$inferSelect;
 export type Photo = typeof photos.$inferSelect;
 export type AllowedIp = typeof allowedIps.$inferSelect;
+export type AccessAttempt = typeof accessAttempts.$inferSelect;

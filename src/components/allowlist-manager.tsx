@@ -6,21 +6,24 @@ import {
   Loader2,
   MonitorSmartphone,
   Plus,
+  ShieldAlert,
   ShieldCheck,
   ShieldQuestion,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
-import type { AllowedIp } from "@/db/schema";
+import type { AccessAttempt, AllowedIp } from "@/db/schema";
 import { Button, Field, inputCls } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, timeAgo } from "@/lib/utils";
 
 export function AllowlistManager({
   rows,
   clientIp,
+  attempts,
 }: {
   rows: AllowedIp[];
   clientIp: string;
+  attempts: AccessAttempt[];
 }) {
   const router = useRouter();
   const [ip, setIp] = useState("");
@@ -162,6 +165,66 @@ export function AllowlistManager({
           )}
         </div>
       </div>
+
+      {/* Intentos de acceso: autorizar dispositivos nuevos con un clic */}
+      {enforce && attempts.length > 0 && (
+        <div className="rounded-3xl border border-amber-200/70 bg-amber-50/50 p-5 shadow-card sm:p-6">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4.5 w-4.5 text-amber-600" />
+            <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
+              Intentos de acceso detectados
+            </h2>
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+            Dispositivos que intentaron entrar y fueron rechazados. Si uno es
+            tuyo o de un compañero, autorízalo con un clic — sin teclear nada.
+          </p>
+          <ul className="mt-3.5 divide-y divide-amber-200/60">
+            {attempts.map((a) => {
+              const already = rows.some(
+                (r) => r.ip === a.ip || r.ip.split("/")[0] === a.ip,
+              );
+              return (
+                <li key={`${a.id}-${a.ip}`} className="flex items-center gap-3 py-2.5">
+                  <span className="font-mono text-sm font-bold tracking-wider text-ink">
+                    {a.ip}
+                  </span>
+                  <button
+                    onClick={() =>
+                      alert(new Date(a.createdAt).toLocaleString("es-ES"))
+                    }
+                    className="cursor-help text-xs text-ink-soft underline-offset-2 hover:underline"
+                  >
+                    {timeAgo(a.createdAt)}
+                  </button>
+                  <span className="flex-1" />
+                  {already ? (
+                    <span className="text-[0.68rem] font-bold uppercase tracking-wide text-emerald-700">
+                      autorizada
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      disabled={pending}
+                      onClick={() =>
+                        void add({ ip: a.ip, label: "Dispositivo autorizado desde intentos" })
+                      }
+                    >
+                      {pending ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                      )}
+                      Autorizar
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Lista blanca */}
       <div className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">

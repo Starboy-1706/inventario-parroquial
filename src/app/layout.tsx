@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { Shell } from "@/components/shell";
-import { isAuthorizedIp } from "@/lib/access";
+import { isAuthorizedIp, logAccessAttempt } from "@/lib/access";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -56,6 +56,8 @@ export default async function RootLayout({
   }
 
   if (!allowed) {
+    // Registra el intento para que el administrador pueda autorizarlo con un clic
+    await logAccessAttempt();
     return (
       <html lang="es">
         <body style={{ margin: 0, backgroundColor: "#ffffff", color: "#ffffff" }}>
