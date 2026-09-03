@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", monospace;
+
+  --color-paper: #f3eee1;
+  --color-paper-deep: #eae3d0;
+  --color-cream: #fbf8ef;
+  --color-ink: #211c12;
+  --color-ink-soft: #6f6552;
+  --color-ink-faint: #a3987f;
+  --color-line: #e0d7c1;
+  --color-line-soft: #ece5d3;
+  --color-gold: #a67c2d;
+  --color-gold-deep: #7d5b1a;
+  --color-gold-soft: #c9a24b;
+  --color-basilica: #2e4b3a;
+  --color-basilica-deep: #1e3327;
+  --color-wine: #7c3532;
+
+  --shadow-lift: 0 1px 2px rgb(33 28 18 / 0.05), 0 12px 32px -12px rgb(33 28 18 / 0.18);
+  --shadow-card: 0 1px 2px rgb(33 28 18 / 0.04), 0 8px 24px -12px rgb(33 28 18 / 0.12);
+
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s ease both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Grano de papel sutil */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-cream);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-ink) 18%, transparent);
+  border-radius: 8px;
+  border: 2px solid var(--color-paper);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-ink) 32%, transparent);
+}
+
+/* Línea de escaneo animada para el visor de cámara */
+@keyframes scan-sweep {
+  0%,
+  100% {
+    top: 8%;
+  }
+  50% {
+    top: 88%;
+  }
+}
+.scan-sweep {
+  animation: scan-sweep 2.6s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse-soft {
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
+
+/* ---------- Impresión de etiquetas QR ---------- */
+@media print {
+  body {
+    background: #fff;
+  }
+  body::before {
+    display: none;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-area {
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+}
+.print-area {
+  display: none;
+}

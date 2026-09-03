@@ -1,0 +1,226 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { asc, eq, desc } from "drizzle-orm";
+import { ArrowLeft, Calendar, Coins, Layers, MapPin, ScrollText, Tag } from "lucide-react";
+import { db } from "@/db";
+import { items, movements, zones } from "@/db/schema";
+import {
+  ConditionBadge,
+  StatusBadge,
+  TypeBadge,
+  ZoneIcon,
+} from "@/components/ui";
+import { MovementIcon } from "@/components/movement-icon";
+import { QrLabel } from "@/components/qr-label";
+import { StockAdjuster } from "@/components/stock-adjuster";
+import { ItemActions } from "@/components/item-actions";
+import { MOVEMENT_LABELS, type MovementType } from "@/lib/constants";
+import { formatDate, formatDateTime, formatMoney, photoUrl } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
+
+type Props = { params: Promise<{ id: string }> };
+
+export default async function ItemDetailPage({ params }: Props) {
+  const { id: raw } = await params;
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0) notFound();
+
+  const [row] = await db
+    .select({ item: items, zone: zones })
+    .from(items)
+    .innerJoin(zones, eq(items.zoneId, zones.id))
+    .where(eq(items.id, id));
+  if (!row) notFound();
+
+  const [history, allZones] = await Promise.all([
+    db
+      .select()
+      .from(movements)
+      .where(eq(movements.itemId, id))
+      .orderBy(desc(movements.createdAt)),
+    db.select().from(zones).orderBy(asc(zones.name)),
+  ]);
+
+  const { item, zone } = row;
+
+  const meta = [
+    { icon: Tag, label: "Categoría", value: item.category },
+    { icon: MapPin, label: "Zona", value: zone.name },
+    {
+      icon: Calendar,
+      label: "Adquisición",
+      value: formatDate(item.acquisitionDate),
+    },
+    {
+      icon: Coins,
+      label: "Valor estimado",
+      value: formatMoney(item.estimatedValue),
+    },
+    {
+      icon: Layers,
+      label: "Alta en inventario",
+      value: formatDate(item.createdAt),
+    },
+  ];
+
+  return (
+    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12">
+      <Link
+        href={`/inventario?zona=${zone.id}`}
+        className="no-print inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft transition hover:text-ink"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Volver a {zone.name}
+      </Link>
+
+      {/* ---------- Cabecera de ficha ---------- */}
+      <header className="no-print mt-5 animate-fade-up">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="rounded-lg border border-line bg-white px-3 py-1.5 font-mono text-sm font-bold tracking-[0.18em] text-ink">
+            {item.code}
+          </span>
+          <TypeBadge type={item.itemType} />
+          <StatusBadge status={item.status} />
+          <ConditionBadge condition={item.condition} />
+        </div>
+        <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.05] tracking-tight text-ink sm:text-5xl">
+          {item.name}
+        </h1>
+        {item.description && (
+          <p className="mt-3 max-w-2xl text-[0.95rem] leading-relaxed text-ink-soft">
+            {item.description}
+          </p>
+        )}
+      </header>
+
+      <div className="no-print mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+        {/* ---------- Columna principal ---------- */}
+        <div className="space-y-6">
+          <section
+            className="animate-fade-up rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6"
+            style={{ animationDelay: "100ms" }}
+          >
+            <div className="flex items-center gap-3">
+              <ZoneIcon icon={zone.icon} color={zone.color} />
+              <div>
+                <p className="text-sm font-bold text-ink">{zone.name}</p>
+                <p className="text-xs text-ink-soft">{zone.description}</p>
+              </div>
+            </div>
+            <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-line-soft pt-5 sm:grid-cols-3">
+              {meta.map((m) => (
+                <div key={m.label}>
+                  <dt className="flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                    <m.icon className="h-3 w-3" />
+                    {m.label}
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium text-ink">{m.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {item.notes && (
+              <div className="mt-5 rounded-2xl border border-gold/25 bg-gold/8 px-4 py-3">
+                <p className="flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-gold-deep">
+                  <ScrollText className="h-3 w-3" />
+                  Notas internas
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-ink">{item.notes}</p>
+              </div>
+            )}
+          </section>
+
+          <div className="animate-fade-up" style={{ animationDelay: "180ms" }}>
+            {item.itemType === "CONTABLE" ? (
+              <StockAdjuster
+                itemId={item.id}
+                quantity={item.quantity}
+                minQuantity={item.minQuantity}
+              />
+            ) : (
+              <div className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-ink-soft">
+                  Pieza única
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                  Este artículo se controla por <strong className="text-ink">estado</strong>,
+                  no por unidades. Usa el panel de gestión para marcarlo como
+                  prestado, en mantenimiento o de vuelta en su lugar.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ---------- Historial ---------- */}
+          <section
+            className="animate-fade-up rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6"
+            style={{ animationDelay: "260ms" }}
+          >
+            <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
+              Historial de movimientos
+            </h2>
+            <ul className="mt-4 space-y-1">
+              {history.map((m) => (
+                <li
+                  key={m.id}
+                  className="flex items-start gap-3 rounded-xl px-2 py-2.5 transition hover:bg-paper/70"
+                >
+                  <MovementIcon type={m.type} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-ink">
+                      {MOVEMENT_LABELS[m.type as MovementType] ?? m.type}
+                      {m.quantity > 0 && (
+                        <span className="ml-2 rounded-full bg-ink/5 px-2 py-0.5 font-mono text-[0.65rem] font-bold text-ink-soft">
+                          {m.quantity} uds.
+                        </span>
+                      )}
+                    </p>
+                    {m.note && (
+                      <p className="mt-0.5 truncate text-xs text-ink-soft">{m.note}</p>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-[0.68rem] font-medium text-ink-faint">
+                    {formatDateTime(m.createdAt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+
+        {/* ---------- Columna lateral ---------- */}
+        <div className="space-y-6">
+          {item.photoId && (
+            <figure
+              className="animate-fade-up overflow-hidden rounded-3xl border border-line bg-cream shadow-card"
+              style={{ animationDelay: "100ms" }}
+            >
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photoUrl(item.photoId) ?? ""}
+                  alt={`Fotografía de ${item.name}`}
+                  className="aspect-[4/3] w-full object-cover"
+                />
+                <figcaption className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-ink/70 to-transparent px-4 pb-3 pt-10">
+                  <span className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-cream/90">
+                    Fotografía del artículo
+                  </span>
+                  <span className="rounded-full bg-ink/50 px-2.5 py-0.5 font-mono text-[0.65rem] font-semibold text-gold-soft backdrop-blur-sm">
+                    {item.code}
+                  </span>
+                </figcaption>
+              </div>
+            </figure>
+          )}
+          <div className="animate-fade-up" style={{ animationDelay: "140ms" }}>
+            <QrLabel code={item.code} name={item.name} zoneName={zone.name} />
+          </div>
+          <div className="animate-fade-up" style={{ animationDelay: "220ms" }}>
+            <ItemActions item={item} zones={allZones} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
