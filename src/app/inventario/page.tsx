@@ -4,7 +4,8 @@ import { Boxes, ChevronRight } from "lucide-react";
 import { db } from "@/db";
 import { zones } from "@/db/schema";
 import { getItems } from "@/lib/queries";
-import { EmptyState, StatusBadge, TypeBadge } from "@/components/ui";
+import { StatusBadge, TypeBadge } from "@/components/ui";
+import { EmptyState } from "@/components/empty-state";
 import { InventoryToolbar } from "@/components/inventory-toolbar";
 import { cn, photoUrl } from "@/lib/utils";
 

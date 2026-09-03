@@ -12,7 +12,8 @@ import {
 import Link from "next/link";
 import type { ZoneWithCount } from "@/lib/queries";
 import { ZONE_COLORS, ZONE_ICONS } from "@/lib/constants";
-import { Button, Field, Modal, ZoneIcon, EmptyState, inputCls } from "@/components/ui";
+import { Button, Field, Modal, ZoneIcon, inputCls } from "@/components/ui";
+import { EmptyState } from "@/components/empty-state";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { cn, photoUrl } from "@/lib/utils";
 import { MapPinned } from "lucide-react";
