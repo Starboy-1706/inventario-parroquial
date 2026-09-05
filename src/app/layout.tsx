@@ -19,10 +19,10 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sacristía Digital · Inventario Parroquial",
-    template: "%s · Sacristía Digital",
+    default: "Parroquia Santa Bárbara · Inventario",
+    template: "%s · Parroquia Santa Bárbara",
   },
-  description: "Gestión privada del inventario parroquial.",
+  description: "Gestión privada del inventario de la Parroquia Santa Bárbara.",
   robots: { index: false, follow: false },
 };
 

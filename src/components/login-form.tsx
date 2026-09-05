@@ -65,7 +65,8 @@ export function LoginForm({ configured }: { configured: boolean }) {
               Acceso restringido
             </h1>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
-              Introduce la clave para entrar al inventario parroquial.
+              Inventario de la Parroquia Santa Bárbara. Introduce la clave para
+              entrar.
             </p>
           </div>
 

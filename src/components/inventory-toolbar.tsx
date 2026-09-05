@@ -1,12 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Download, PackagePlus, Printer, Search } from "lucide-react";
 import type { Zone } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
-import { ItemForm } from "@/components/item-form";
 
 export function InventoryToolbar({ zones }: { zones: Zone[] }) {
   const router = useRouter();
@@ -18,7 +18,6 @@ export function InventoryToolbar({ zones }: { zones: Zone[] }) {
   const activeZone = searchParams.get("zona");
   const activeType = searchParams.get("tipo") ?? "";
   const activeStatus = searchParams.get("estado") ?? "";
-  const [formOpen, setFormOpen] = useState(false);
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -89,10 +88,13 @@ export function InventoryToolbar({ zones }: { zones: Zone[] }) {
             <Printer className="h-3.5 w-3.5 text-ink-soft" />
             <span className="hidden sm:inline">Imprimir</span>
           </button>
-          <Button variant="dark" onClick={() => setFormOpen(true)}>
+          <Link
+            href={activeZone ? `/inventario/nuevo?zona=${activeZone}` : "/inventario/nuevo"}
+            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream shadow-card transition hover:bg-ink/85"
+          >
             <PackagePlus className="h-4 w-4" />
             Nuevo artículo
-          </Button>
+          </Link>
         </div>
       </div>
 
@@ -130,13 +132,6 @@ export function InventoryToolbar({ zones }: { zones: Zone[] }) {
           );
         })}
       </div>
-
-      <ItemForm
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        zones={zones}
-        defaultZoneId={activeZone ? Number(activeZone) : undefined}
-      />
     </div>
   );
 }

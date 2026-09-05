@@ -481,7 +481,7 @@ export function Scanner() {
                   Escanear de nuevo
                 </Button>
                 <Link
-                  href="/inventario"
+                  href="/inventario/nuevo"
                   className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-ink/25"
                 >
                   <PackagePlus className="h-4 w-4" />

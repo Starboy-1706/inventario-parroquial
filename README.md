@@ -1,4 +1,4 @@
-# Sacristía Digital — Inventario Parroquial
+# Sacristía Digital — Inventario de la Parroquia Santa Bárbara
 
 Aplicación web fullstack para la **gestión del inventario parroquial dividido por
 zonas**, con **códigos únicos escaneables (QR/barras)** por artículo y un

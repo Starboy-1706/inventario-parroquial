@@ -96,7 +96,7 @@ export default async function DashboardPage() {
       {/* ---------- Cabecera ---------- */}
       <header className="animate-fade-up">
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
-          Panel general · {today}
+          Parroquia Santa Bárbara · {today}
         </p>
         <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-[1.05] tracking-tight text-ink sm:text-5xl">
           La casa del Señor,{" "}

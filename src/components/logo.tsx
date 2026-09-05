@@ -26,7 +26,7 @@ export function LogoWord({ className }: { className?: string }) {
   return (
     <span className={cn("leading-tight", className)}>
       <span className="block font-display text-[1.05rem] font-semibold tracking-tight text-cream">
-        Sacristía Digital
+        Parroquia Santa Bárbara
       </span>
       <span className="mt-0.5 block text-[0.6rem] font-medium uppercase tracking-[0.24em] text-gold-soft/80">
         Inventario parroquial

@@ -79,7 +79,7 @@ export function QrLabel({
               color: "#6f6552",
             }}
           >
-            Inventario Parroquial
+            Parroquia Santa Bárbara
           </p>
           <div style={{ margin: "14px auto", width: "fit-content" }}>
             <QRCodeSVG value={url} size={200} level="M" fgColor="#000" bgColor="#fff" />
