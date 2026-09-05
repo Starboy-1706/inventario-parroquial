@@ -119,6 +119,7 @@ export function ItemCreateForm({
       name,
       zoneId,
       locationId: Number(fd.get("locationId")) || null,
+      locationNote: String(fd.get("locationNote") ?? "").trim() || null,
       externalBarcode: String(fd.get("externalBarcode") ?? "").trim() || null,
       photoIds,
       itemType,
@@ -313,6 +314,9 @@ export function ItemCreateForm({
                       <option key={l.id} value={l.id}>{l.parentId ? "↳ " : ""}{l.name}</option>
                     ))}
                   </select>
+                </Field>
+                <Field label="Lugar exacto en esa ubicación" hint="ej. cajón de plata, fondo derecho">
+                  <input name="locationNote" maxLength={300} placeholder="Detalle adicional del lugar" className={inputCls} />
                 </Field>
                 <Field label="Código de barras comercial" hint="EAN, UPC o Code-128 (opcional)">
                   <input name="externalBarcode" maxLength={128} placeholder="Escanéalo o escríbelo" className={`${inputCls} font-mono`} />

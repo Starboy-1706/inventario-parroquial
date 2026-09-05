@@ -96,6 +96,8 @@ export const items = pgTable(
     locationId: integer("location_id").references(() => storageLocations.id, {
       onDelete: "set null",
     }),
+    // Lugar exacto en la propia ubicación (texto libre): "cajón de plata, fondo derecho"
+    locationNote: text("location_note"),
     photoId: integer("photo_id").references(() => photos.id, { onDelete: "set null" }),
     itemType: text("item_type").notNull().default("UNICO"),
     quantity: integer("quantity").notNull().default(1),

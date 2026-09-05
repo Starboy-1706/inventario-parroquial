@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
           category: data.category,
           zoneId: data.zoneId,
           locationId: data.locationId,
+          locationNote: data.locationNote,
           photoId: data.photoId ?? allPhotoIds[0] ?? null,
           itemType: data.itemType,
           quantity: data.quantity,

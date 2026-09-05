@@ -124,6 +124,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     category: data.category ?? current.category,
     zoneId: effectiveZone,
     locationId: data.locationId === undefined ? current.locationId : data.locationId,
+    locationNote: data.locationNote === undefined ? current.locationNote : data.locationNote,
     photoId:
       data.photoId === undefined
         ? photoIds?.[0] ?? current.photoId
@@ -151,6 +152,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     category: "categoría",
     zoneId: "zona",
     locationId: "ubicación",
+    locationNote: "lugar exacto",
     photoId: "foto principal",
     itemType: "tipo",
     quantity: "cantidad",

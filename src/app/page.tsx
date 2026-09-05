@@ -209,7 +209,7 @@ export default async function DashboardPage() {
                     />
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-3">
-                        <span className="relative -mt-9 rounded-2xl border border-line-soft bg-cream p-1 shadow-lift">
+                        <span className="relative -mt-10 rounded-2xl border border-line-soft bg-cream p-1 shadow-lift z-10 shrink-0">
                           <ZoneIcon icon={z.icon} color={z.color} />
                         </span>
                         <ArrowUpRight className="h-4 w-4 text-ink-faint opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:opacity-100" />

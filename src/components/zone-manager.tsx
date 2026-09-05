@@ -283,11 +283,11 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                   style={{ backgroundColor: z.color }}
                 />
                 <div className="flex flex-1 flex-col p-5">
-                  <div className="-mt-10 flex items-start justify-between">
-                    <span className="relative rounded-2xl border border-line-soft bg-cream p-1 shadow-lift">
+                  <div className="flex items-start justify-between">
+                    <span className="relative rounded-2xl border border-line-soft bg-cream p-1 shadow-lift -mt-10 z-10 shrink-0">
                       <ZoneIcon icon={z.icon} color={z.color} size="lg" />
                     </span>
-                    <div className="flex gap-1 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+                    <div className="flex gap-1.5 shrink-0 -mt-2 z-10 relative">
                       <button
                         onClick={() => openEdit(z)}
                         aria-label={`Editar ${z.name}`}

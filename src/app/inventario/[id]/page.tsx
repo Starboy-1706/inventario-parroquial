@@ -63,7 +63,16 @@ export default async function ItemDetailPage({ params }: Props) {
 
   const meta = [
     { icon: Tag, label: "Categoría", value: item.category },
-    { icon: MapPin, label: "Zona", value: row.location ? `${zone.name} · ${row.location.name}` : zone.name },
+    {
+      icon: MapPin,
+      label: "Zona y lugar exacto",
+      value: (() => {
+        const parts: string[] = [zone.name];
+        if (row.location) parts.push(row.location.name);
+        if (item.locationNote) parts.push(`exactitud: ${item.locationNote}`);
+        return parts.join(" · ");
+      })(),
+    },
     {
       icon: Calendar,
       label: "Adquisición",
