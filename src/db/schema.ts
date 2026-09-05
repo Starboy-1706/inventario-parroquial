@@ -115,33 +115,18 @@ export const movements = pgTable(
 );
 
 /**
- * Registro de intentos de acceso denegados: permite autorizar dispositivos
- * nuevos con un clic desde /seguridad, sin transcribir IPs a mano.
- * Se podan automáticamente (7 días).
+ * Limitador de intentos de acceso por clave.
+ * `key` es un HMAC irreversible del origen de la petición: nunca se guarda
+ * una IP legible y esta tabla NO concede acceso por red.
  */
-export const accessAttempts = pgTable(
-  "access_attempts",
-  {
-    id: serial("id").primaryKey(),
-    ip: text("ip").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (t) => [index("access_attempts_ip_idx").on(t.ip)],
-);
-
-/**
- * Lista blanca de acceso: solo las IPs autorizadas pueden ver la
- * aplicación. Si la tabla está VACÍA, el filtro está en modo abierto
- * (bootstrap) hasta añadir la primera IP.
- */
-export const allowedIps = pgTable("allowed_ips", {
-  id: serial("id").primaryKey(),
-  // IP exacta ("83.45.12.9") o rango CIDR ("83.45.12.0/24")
-  ip: text("ip").notNull().unique(),
-  label: text("label"),
-  createdAt: timestamp("created_at", { withTimezone: true })
+export const authLoginAttempts = pgTable("auth_login_attempts", {
+  key: text("key").primaryKey(),
+  failures: integer("failures").notNull().default(0),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
@@ -150,5 +135,4 @@ export type Zone = typeof zones.$inferSelect;
 export type Item = typeof items.$inferSelect;
 export type Movement = typeof movements.$inferSelect;
 export type Photo = typeof photos.$inferSelect;
-export type AllowedIp = typeof allowedIps.$inferSelect;
-export type AccessAttempt = typeof accessAttempts.$inferSelect;
+export type AuthLoginAttempt = typeof authLoginAttempts.$inferSelect;

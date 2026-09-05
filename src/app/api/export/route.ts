@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { asc, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { items, zones } from "@/db/schema";
-import { apiIpGuard } from "@/lib/access";
+import { apiAuthGuard } from "@/lib/auth";
 import { CONDITION_LABELS, STATUS_LABELS, type ItemCondition, type ItemStatus } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 
@@ -19,7 +19,7 @@ function escapeCsv(value: string | number | null | undefined): string {
  * Incluye BOM UTF-8 (\uFEFF) para que Excel respete acentos y caracteres españoles.
  */
 export async function GET() {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
 
   const rows = await db

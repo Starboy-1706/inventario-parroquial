@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { items, movements, photos, zones } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { CONDITIONS, STATUSES } from "@/lib/constants";
-import { apiIpGuard } from "@/lib/access";
+import { apiAuthGuard } from "@/lib/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -14,7 +14,7 @@ async function parseId(ctx: Ctx) {
 }
 
 export async function GET(_request: NextRequest, ctx: Ctx) {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
@@ -39,7 +39,7 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
 }
 
 export async function PATCH(request: NextRequest, ctx: Ctx) {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
@@ -49,38 +49,98 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Datos de artículo no válidos." }, { status: 400 });
+  }
+
   const updates: Partial<typeof items.$inferInsert> = {};
   const movementRows: (typeof movements.$inferInsert)[] = [];
 
-  if (typeof body.name === "string" && body.name.trim()) updates.name = body.name.trim();
-  if (typeof body.description === "string") updates.description = body.description.trim() || null;
-  if (typeof body.category === "string" && body.category.trim()) updates.category = body.category.trim();
-  if (typeof body.notes === "string") updates.notes = body.notes.trim() || null;
-  if (typeof body.acquisitionDate === "string")
-    updates.acquisitionDate = body.acquisitionDate || null;
-
-  if (body.itemType === "UNICO" || body.itemType === "CONTABLE") {
-    updates.itemType = body.itemType;
-    if (body.itemType === "UNICO") updates.quantity = 1;
+  if (typeof body.name === "string") {
+    const name = body.name.trim();
+    if (!name) {
+      return NextResponse.json({ error: "El nombre no puede estar vacío." }, { status: 400 });
+    }
+    if (name.length > 160) {
+      return NextResponse.json({ error: "El nombre es demasiado largo." }, { status: 400 });
+    }
+    updates.name = name;
   }
+  if (typeof body.description === "string") {
+    if (body.description.length > 2_000) {
+      return NextResponse.json({ error: "La descripción es demasiado larga." }, { status: 400 });
+    }
+    updates.description = body.description.trim() || null;
+  }
+  if (typeof body.category === "string" && body.category.trim()) {
+    updates.category = body.category.trim().slice(0, 120);
+  }
+  if (typeof body.notes === "string") {
+    if (body.notes.length > 2_000) {
+      return NextResponse.json({ error: "Las notas son demasiado largas." }, { status: 400 });
+    }
+    updates.notes = body.notes.trim() || null;
+  }
+  if (typeof body.acquisitionDate === "string") {
+    if (body.acquisitionDate && !/^\d{4}-\d{2}-\d{2}$/.test(body.acquisitionDate)) {
+      return NextResponse.json({ error: "La fecha no tiene un formato válido." }, { status: 400 });
+    }
+    updates.acquisitionDate = body.acquisitionDate || null;
+  }
+
+  const effectiveType =
+    body.itemType === "UNICO" || body.itemType === "CONTABLE"
+      ? body.itemType
+      : current.itemType;
+  if (effectiveType !== current.itemType) updates.itemType = effectiveType;
 
   if (body.minQuantity !== undefined) {
-    const min = Math.max(0, Math.floor(Number(body.minQuantity) || 0));
-    updates.minQuantity = min;
+    const rawMin = Number(body.minQuantity);
+    if (!Number.isFinite(rawMin) || rawMin < 0 || rawMin > 1_000_000) {
+      return NextResponse.json(
+        { error: "El stock mínimo debe estar entre 0 y 1.000.000." },
+        { status: 400 },
+      );
+    }
+    updates.minQuantity = effectiveType === "UNICO" ? 0 : Math.floor(rawMin);
   }
 
-  if (body.quantity !== undefined) {
-    const q = Math.max(0, Math.floor(Number(body.quantity) || 0));
-    updates.quantity = current.itemType === "UNICO" ? 1 : q;
+  const rawQuantity = body.quantity !== undefined ? Number(body.quantity) : current.quantity;
+  if (
+    effectiveType === "CONTABLE" &&
+    (!Number.isFinite(rawQuantity) || rawQuantity < 0 || rawQuantity > 1_000_000)
+  ) {
+    return NextResponse.json(
+      { error: "La cantidad debe estar entre 0 y 1.000.000." },
+      { status: 400 },
+    );
+  }
+  const requestedQuantity =
+    effectiveType === "UNICO" ? 1 : Math.floor(rawQuantity);
+  if (requestedQuantity !== current.quantity) {
+    updates.quantity = requestedQuantity;
+    movementRows.push({
+      itemId: id,
+      type: "AJUSTE",
+      quantity: Math.abs(requestedQuantity - current.quantity),
+      note: `Edición de ficha: ${current.quantity} → ${requestedQuantity} uds.`,
+    });
   }
 
   if (body.estimatedValue !== undefined) {
-    const v = Number(body.estimatedValue);
-    updates.estimatedValue =
-      Number.isFinite(v) && v >= 0 && body.estimatedValue !== "" && body.estimatedValue !== null
-        ? v.toFixed(2)
-        : null;
+    if (body.estimatedValue === "" || body.estimatedValue === null) {
+      updates.estimatedValue = null;
+    } else {
+      const value = Number(body.estimatedValue);
+      if (!Number.isFinite(value) || value < 0 || value > 100_000_000) {
+        return NextResponse.json(
+          { error: "El valor estimado no es válido." },
+          { status: 400 },
+        );
+      }
+      updates.estimatedValue = value.toFixed(2);
+    }
   }
 
   if (
@@ -131,7 +191,10 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
 
   if (body.zoneId !== undefined) {
     const zoneId = Number(body.zoneId);
-    if (Number.isInteger(zoneId) && zoneId > 0 && zoneId !== current.zoneId) {
+    if (!Number.isInteger(zoneId) || zoneId <= 0) {
+      return NextResponse.json({ error: "La zona indicada no es válida." }, { status: 400 });
+    }
+    if (zoneId !== current.zoneId) {
       const [fromZone] = await db.select().from(zones).where(eq(zones.id, current.zoneId));
       const [toZone] = await db.select().from(zones).where(eq(zones.id, zoneId));
       if (!toZone) {
@@ -167,7 +230,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
 }
 
 export async function DELETE(_request: NextRequest, ctx: Ctx) {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });

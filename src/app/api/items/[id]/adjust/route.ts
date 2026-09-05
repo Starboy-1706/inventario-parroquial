@@ -1,90 +1,114 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { items, movements } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
-import { apiIpGuard } from "@/lib/access";
+import { eq } from "drizzle-orm";
+import { apiAuthGuard } from "@/lib/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/**
- * Ajuste de existencias en transacción ACID.
- * body: { delta?: number, set?: number, note?: string }
- *  - delta: entradas/salidas relativas (+5 / -2)  → ENTRADA / SALIDA
- *  - set:   recuento absoluto                      → AJUSTE
- */
+/** Ajuste de existencias atómico con bloqueo de fila (evita doble retirada). */
 export async function POST(request: NextRequest, ctx: Ctx) {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
+
   const { id: raw } = await ctx.params;
   const id = Number(raw);
   if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
   }
 
-  const [item] = await db.select().from(items).where(eq(items.id, id));
-  if (!item) {
-    return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Ajuste no válido." }, { status: 400 });
   }
-  if (item.itemType !== "CONTABLE") {
+
+  const hasSet = Object.prototype.hasOwnProperty.call(body, "set");
+  const rawValue = Number(hasSet ? body.set : body.delta);
+  if (!Number.isFinite(rawValue) || !Number.isInteger(rawValue)) {
     return NextResponse.json(
-      { error: "Las piezas únicas no admiten ajuste de cantidad." },
+      { error: "La cantidad debe ser un número entero." },
       { status: 400 },
     );
   }
+  if (Math.abs(rawValue) > 1_000_000) {
+    return NextResponse.json(
+      { error: "La cantidad supera el máximo permitido." },
+      { status: 400 },
+    );
+  }
+  if (!hasSet && rawValue === 0) {
+    return NextResponse.json({ error: "El ajuste no puede ser cero." }, { status: 400 });
+  }
+  if (hasSet && rawValue < 0) {
+    return NextResponse.json({ error: "El recuento no puede ser negativo." }, { status: 400 });
+  }
 
-  const body = await request.json();
-  const note = typeof body.note === "string" ? body.note.trim() : null;
+  const note =
+    typeof body.note === "string" ? body.note.trim().slice(0, 500) || null : null;
 
-  let newQty: number;
-  let type: "ENTRADA" | "SALIDA" | "AJUSTE";
-  let moved = 0;
+  try {
+    const updated = await db.transaction(async (tx) => {
+      // Dos peticiones simultáneas se procesan una detrás de otra.
+      const [item] = await tx
+        .select()
+        .from(items)
+        .where(eq(items.id, id))
+        .for("update");
 
-  if (body.set !== undefined) {
-    newQty = Math.max(0, Math.floor(Number(body.set) || 0));
-    type = "AJUSTE";
-    moved = newQty - item.quantity;
-  } else {
-    const delta = Math.floor(Number(body.delta) || 0);
-    if (delta === 0) {
-      return NextResponse.json({ error: "El ajuste no puede ser cero." }, { status: 400 });
+      if (!item) throw new Error("ITEM_NOT_FOUND");
+      if (item.itemType !== "CONTABLE") throw new Error("NOT_COUNTABLE");
+
+      const newQty = hasSet ? rawValue : item.quantity + rawValue;
+      if (newQty < 0) throw new Error(`INSUFFICIENT:${item.quantity}`);
+      if (newQty === item.quantity) throw new Error("NO_CHANGE");
+
+      const moved = newQty - item.quantity;
+      const type = hasSet ? "AJUSTE" : moved > 0 ? "ENTRADA" : "SALIDA";
+      const [row] = await tx
+        .update(items)
+        .set({ quantity: newQty, updatedAt: new Date() })
+        .where(eq(items.id, id))
+        .returning();
+
+      await tx.insert(movements).values({
+        itemId: id,
+        type,
+        quantity: Math.abs(moved),
+        note:
+          note ??
+          (type === "AJUSTE"
+            ? `Recuento físico: ${item.quantity} → ${newQty}`
+            : `${moved > 0 ? "+" : ""}${moved} uds · ${item.quantity} → ${newQty}`),
+      });
+      return row;
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "ITEM_NOT_FOUND") {
+      return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
     }
-    newQty = item.quantity + delta;
-    if (newQty < 0) {
+    if (message === "NOT_COUNTABLE") {
       return NextResponse.json(
-        { error: `Stock insuficiente: solo quedan ${item.quantity} unidades.` },
+        { error: "Las piezas únicas no admiten ajuste de cantidad." },
         { status: 400 },
       );
     }
-    type = delta > 0 ? "ENTRADA" : "SALIDA";
-    moved = delta;
-  }
-
-  const updated = await db.transaction(async (tx) => {
-    const [row] = await tx
-      .update(items)
-      .set({ quantity: newQty, updatedAt: new Date() })
-      .where(eq(items.id, id))
-      .returning();
-
-    // Garantía de consistencia: nunca stock negativo
-    if (row.quantity < 0) {
-      tx.rollback();
+    if (message === "NO_CHANGE") {
+      return NextResponse.json({ error: "El recuento ya tiene ese valor." }, { status: 400 });
     }
-
-    await tx.insert(movements).values({
-      itemId: id,
-      type,
-      quantity: Math.abs(moved),
-      note:
-        note ??
-        (type === "AJUSTE"
-          ? `Recuento físico: ${item.quantity} → ${newQty}`
-          : `${moved > 0 ? "+" : ""}${moved} uds · ${item.quantity} → ${newQty}`),
-    });
-
-    return row;
-  });
-
-  void sql;
-  return NextResponse.json(updated);
+    if (message.startsWith("INSUFFICIENT:")) {
+      const available = message.split(":")[1];
+      return NextResponse.json(
+        { error: `Stock insuficiente: solo quedan ${available} unidades.` },
+        { status: 400 },
+      );
+    }
+    console.error("[stock/adjust]", error);
+    return NextResponse.json(
+      { error: "No se pudo actualizar el stock." },
+      { status: 500 },
+    );
+  }
 }

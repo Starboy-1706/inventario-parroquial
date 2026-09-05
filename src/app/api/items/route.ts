@@ -5,12 +5,12 @@ import { eq } from "drizzle-orm";
 import { getItems } from "@/lib/queries";
 import { CATEGORIES, CONDITIONS, STATUSES } from "@/lib/constants";
 import { zonePrefix } from "@/lib/utils";
-import { apiIpGuard } from "@/lib/access";
+import { apiAuthGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
   const sp = request.nextUrl.searchParams;
   const data = await getItems({
@@ -24,17 +24,30 @@ export async function GET(request: NextRequest) {
 
 function parseItemBody(body: Record<string, unknown>) {
   const name = String(body.name ?? "").trim();
+  const description = String(body.description ?? "").trim();
+  const notes = String(body.notes ?? "").trim();
   const zoneId = Number(body.zoneId);
   const itemType = body.itemType === "CONTABLE" ? "CONTABLE" : "UNICO";
   if (!name) return { error: "El nombre del artículo es obligatorio." } as const;
+  if (name.length > 160 || description.length > 2_000 || notes.length > 2_000)
+    return { error: "Alguno de los textos supera la longitud permitida." } as const;
   if (!Number.isInteger(zoneId) || zoneId <= 0)
     return { error: "Debes indicar una zona válida." } as const;
 
-  const quantity =
-    itemType === "UNICO"
-      ? 1
-      : Math.max(0, Math.floor(Number(body.quantity) || 0));
-  const minQuantity = Math.max(0, Math.floor(Number(body.minQuantity) || 0));
+  const rawQuantity = Number(body.quantity ?? 0);
+  const rawMin = Number(body.minQuantity ?? 0);
+  if (
+    itemType === "CONTABLE" &&
+    (!Number.isFinite(rawQuantity) || rawQuantity < 0 || rawQuantity > 1_000_000)
+  ) {
+    return { error: "La cantidad debe estar entre 0 y 1.000.000." } as const;
+  }
+  if (!Number.isFinite(rawMin) || rawMin < 0 || rawMin > 1_000_000) {
+    return { error: "El stock mínimo debe estar entre 0 y 1.000.000." } as const;
+  }
+
+  const quantity = itemType === "UNICO" ? 1 : Math.floor(rawQuantity);
+  const minQuantity = itemType === "UNICO" ? 0 : Math.floor(rawMin);
 
   const status =
     typeof body.status === "string" &&
@@ -56,7 +69,7 @@ function parseItemBody(body: Record<string, unknown>) {
   return {
     data: {
       name,
-      description: String(body.description ?? "").trim() || null,
+      description: description || null,
       category,
       zoneId,
       itemType,
@@ -65,23 +78,28 @@ function parseItemBody(body: Record<string, unknown>) {
       status,
       condition,
       acquisitionDate:
-        typeof body.acquisitionDate === "string" && body.acquisitionDate
+        typeof body.acquisitionDate === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(body.acquisitionDate)
           ? body.acquisitionDate
           : null,
       estimatedValue:
-        Number.isFinite(value) && value >= 0 && body.estimatedValue !== "" &&
-        body.estimatedValue !== null && body.estimatedValue !== undefined
+        Number.isFinite(value) && value >= 0 && value <= 100_000_000 &&
+        body.estimatedValue !== "" && body.estimatedValue !== null &&
+        body.estimatedValue !== undefined
           ? value.toFixed(2)
           : null,
-      notes: String(body.notes ?? "").trim() || null,
+      notes: notes || null,
     },
   } as const;
 }
 
 export async function POST(request: NextRequest) {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Datos de artículo no válidos." }, { status: 400 });
+  }
   const parsed = parseItemBody(body);
   if ("error" in parsed) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });

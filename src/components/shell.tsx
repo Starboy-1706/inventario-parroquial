@@ -30,6 +30,10 @@ function isActive(pathname: string, href: string) {
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
+  // La ventana de acceso vive antes de la aplicación: sin barra lateral,
+  // navegación móvil ni contenido del inventario.
+  if (pathname === "/acceso") return <>{children}</>;
+
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[17.5rem_1fr]">
       {/* ---------- Barra lateral (escritorio) ---------- */}

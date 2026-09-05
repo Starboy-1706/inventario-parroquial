@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { Shell } from "@/components/shell";
-import { isAuthorizedIp, logAccessAttempt } from "@/lib/access";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -12,24 +11,18 @@ const fraunces = Fraunces({
   axes: ["opsz"],
 });
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
-
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
 });
 
 export const metadata: Metadata = {
-  // Título raíz neutro: en páginas bloqueadas por la lista blanca lo único
-  // visible en la pestaña del navegador es "404".
   title: {
-    default: "404",
+    default: "Sacristía Digital · Inventario Parroquial",
     template: "%s · Sacristía Digital",
   },
-  // Aplicación privada: nunca indexable
+  description: "Gestión privada del inventario parroquial.",
   robots: { index: false, follow: false },
 };
 
@@ -39,39 +32,10 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  // ─── Lista blanca por IP (servidor) ────────────────────────────────
-  // Un visitante no autorizado recibe una página completamente vacía:
-  // ni HTML de la app, ni navegación, ni JavaScript. No hay nada que
-  // pueda manipularse desde la consola del navegador.
-  let allowed = false;
-  try {
-    allowed = await isAuthorizedIp();
-  } catch {
-    allowed = false;
-  }
-
-  if (!allowed) {
-    // Registra el intento para que el administrador pueda autorizarlo con un clic
-    await logAccessAttempt();
-    return (
-      <html lang="es">
-        <body style={{ margin: 0, backgroundColor: "#ffffff", color: "#ffffff" }}>
-          {/* Intencionadamente vacío: ni interfaz, ni datos, ni branding */}
-        </body>
-      </html>
-    );
-  }
-
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
-      <body
-        className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} bg-paper text-ink antialiased`}
-      >
+      <body className={`${inter.variable} ${fraunces.variable} ${jetbrains.variable} bg-paper text-ink antialiased`}>
         <Shell>{children}</Shell>
       </body>
     </html>

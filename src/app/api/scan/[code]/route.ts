@@ -3,13 +3,13 @@ import { db } from "@/db";
 import { items, zones } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { extractCode } from "@/lib/utils";
-import { apiIpGuard } from "@/lib/access";
+import { apiAuthGuard } from "@/lib/auth";
 
 type Ctx = { params: Promise<{ code: string }> };
 
 /** Consulta instantánea de un código escaneado (QR / barras). */
 export async function GET(_request: NextRequest, ctx: Ctx) {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
   const { code: raw } = await ctx.params;
   const code = extractCode(decodeURIComponent(raw));

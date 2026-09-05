@@ -30,21 +30,22 @@ zonas**, con **códigos únicos escaneables (QR/barras)** por artículo y un
   ajuste, traslado, cambio de estado) queda registrada con fecha y nota, en
   **transacciones ACID**.
 
-## Seguridad (lista blanca por IP)
+## Seguridad por clave
 
-- Tabla `allowed_ips` en PostgreSQL: solo los dispositivos cuya IP figura en
-  ella pueden **ver siquiera** la aplicación. El resto recibe una página 404
-  completamente en blanco — ni interfaz, ni JavaScript, ni metadatos, ni
-  datos en el payload. Sin nada en el navegador, no hay nada que manipular
-  desde la consola.
-- El filtro se aplica **en el servidor**: layout + cada página
-  (`requireAuthorizedIp`) + cada API (`apiIpGuard`, responde 404).
-- **Arranque (bootstrap):** con la tabla vacía, la app es abierta. En cuanto
-  autorizas la primera IP desde **/seguridad**, el bloqueo se activa.
-- Soporta IP exacta (`83.45.12.9`) y rangos CIDR (`83.45.12.0/24`).
-- Salvaguardas: no puedes borrar tu propia IP ni quedarte con la lista vacía.
-- Cabeceras endurecidas: `X-Frame-Options: DENY`, `nosniff`,
-  `Referrer-Policy` y `Permissions-Policy` (cámara solo dentro de la app).
+- Ventana previa en `/acceso`: una persona sin sesión no recibe páginas ni
+  datos del inventario. `proxy.ts` la redirige antes del renderizado.
+- Defensa en profundidad: además de Proxy, cada Server Component verifica la
+  sesión antes de consultar PostgreSQL y cada API valida la cookie de sesión.
+- La cookie es `HttpOnly`, `Secure` en producción y `SameSite=Strict`; contiene
+  un token HMAC firmado con caducidad, nunca la clave de acceso.
+- Cambiar `ACCESS_PASSWORD` invalida las sesiones existentes. Cambiar
+  `SESSION_SECRET` revoca inmediatamente todos los dispositivos.
+- Protección contra fuerza bruta en PostgreSQL: 5 fallos en 15 minutos
+  bloquean temporalmente ese origen. El identificador almacenado es un HMAC
+  irreversible, no una dirección IP legible ni una lista de autorización.
+- Cabeceras endurecidas: CSP, `X-Frame-Options: DENY`, `nosniff`,
+  `Cross-Origin-Opener-Policy`, `Referrer-Policy: no-referrer` y cámara solo
+  dentro de la propia aplicación.
 
 ## Stack
 
@@ -62,9 +63,10 @@ zonas**, con **códigos únicos escaneables (QR/barras)** por artículo y un
 
 ```bash
 npm install
-cp .env.example .env        # configura DATABASE_URL
-npx drizzle-kit push        # crea las tablas (zones, items, movements)
-node scripts/seed.mjs       # datos de ejemplo (opcional)
+cp .env.example .env              # configura las 3 variables
+npx drizzle-kit push              # crea el esquema inicial
+node scripts/setup-auth.mjs       # prepara la seguridad por clave
+node scripts/seed.mjs             # datos de ejemplo (opcional)
 npm run dev
 ```
 
@@ -82,16 +84,19 @@ npm run dev
    `drizzle.config.ts`, la URL se toma de la variable de entorno del comando:
 
    ```bash
-   DATABASE_URL="postgresql://…" npx drizzle-kit push   # crea las tablas
-   DATABASE_URL="postgresql://…" node scripts/seed.mjs  # datos iniciales
+   DATABASE_URL="postgresql://…" node scripts/setup-auth.mjs  # migra IP → clave
+   DATABASE_URL="postgresql://…" npx drizzle-kit push         # sincroniza tablas
+   DATABASE_URL="postgresql://…" node scripts/seed.mjs        # opcional
    ```
 
 4. **Vercel:** _Add New → Project → Import_ desde GitHub → framework detectado
-   automáticamente (Next.js) → añade la variable de entorno antes de desplegar:
+   automáticamente (Next.js) → añade estas variables antes de desplegar:
 
-   | Variable       | Valor                          | Ámbito    |
-   | -------------- | ------------------------------ | --------- |
-   | `DATABASE_URL` | cadena de conexión PostgreSQL  | Producción |
+   | Variable          | Valor                                      | Ámbito     |
+   | ----------------- | ------------------------------------------ | ---------- |
+   | `DATABASE_URL`    | cadena de conexión PostgreSQL              | Producción |
+   | `ACCESS_PASSWORD` | frase privada de 10 caracteres o más       | Producción |
+   | `SESSION_SECRET`  | salida de `openssl rand -base64 48`         | Producción |
 
 5. Cada `git push` dispara un **despliegue continuo** automático. La lectura de
    cámara funciona en cuanto el sitio se sirve por HTTPS (Vercel lo proporciona

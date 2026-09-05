@@ -15,19 +15,19 @@ import { QrLabel } from "@/components/qr-label";
 import { StockAdjuster } from "@/components/stock-adjuster";
 import { ItemActions } from "@/components/item-actions";
 import { MOVEMENT_LABELS, type MovementType } from "@/lib/constants";
-import { pageMetadata, requireAuthorizedIp } from "@/lib/access";
+import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
 import { formatDate, formatDateTime, formatMoney, photoUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
-  return pageMetadata("Artículo");
+  return authPageMetadata("Artículo");
 }
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function ItemDetailPage({ params }: Props) {
-  await requireAuthorizedIp();
+  await requireAuthenticated();
   const { id: raw } = await params;
   const id = Number(raw);
   if (!Number.isInteger(id) || id <= 0) notFound();

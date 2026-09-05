@@ -2,13 +2,13 @@ import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { photos } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { apiIpGuard } from "@/lib/access";
+import { apiAuthGuard } from "@/lib/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 /** Sirve una fotografía almacenada en PostgreSQL, con caché inmutable. */
 export async function GET(_request: NextRequest, ctx: Ctx) {
-  const denied = await apiIpGuard();
+  const denied = await apiAuthGuard();
   if (denied) return denied;
   const { id: raw } = await ctx.params;
   const id = Number(raw);
@@ -33,8 +33,8 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
     headers: {
       "Content-Type": row.mimeType,
       "Content-Length": String(row.data.length),
-      // Las fotos son inmutables: reemplazarla crea una fila nueva
-      "Cache-Control": "public, max-age=31536000, immutable",
+      // Recurso privado: nunca debe quedar visible en caché tras cerrar sesión.
+      "Cache-Control": "private, no-store, max-age=0",
     },
   });
 }

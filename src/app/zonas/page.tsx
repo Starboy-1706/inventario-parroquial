@@ -1,15 +1,15 @@
 import { getZonesWithCounts } from "@/lib/queries";
 import { ZoneManager } from "@/components/zone-manager";
-import { pageMetadata, requireAuthorizedIp } from "@/lib/access";
+import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
-  return pageMetadata("Zonas");
+  return authPageMetadata("Zonas");
 }
 
 export default async function ZonasPage() {
-  await requireAuthorizedIp();
+  await requireAuthenticated();
   const zones = await getZonesWithCounts();
 
   return (
