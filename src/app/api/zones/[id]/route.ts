@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { items, photos, zones } from "@/db/schema";
+import { items, movements, photos, zones } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { slugify } from "@/lib/utils";
 import { ZONE_COLORS, ZONE_ICONS } from "@/lib/constants";
@@ -111,31 +111,141 @@ export async function PATCH(_request: NextRequest, ctx: Ctx) {
   }
 }
 
-export async function DELETE(_request: NextRequest, ctx: Ctx) {
+export async function DELETE(request: NextRequest, ctx: Ctx) {
   const denied = await apiAuthGuard();
   if (denied) return denied;
   const id = await parseId(ctx);
-  if (!id) return NextResponse.json({ error: "Zona no válida." }, { status: 400 });
+  if (!id) {
+    return NextResponse.json({ error: "Zona no válida." }, { status: 400 });
+  }
 
-  const [count] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(items)
-    .where(eq(items.zoneId, id));
+  const body = (await request.json().catch(() => null)) as
+    | { destinationZoneId?: unknown }
+    | null;
+  const destinationZoneId = body?.destinationZoneId
+    ? Number(body.destinationZoneId)
+    : null;
 
-  if (count.n > 0) {
+  if (
+    destinationZoneId !== null &&
+    (!Number.isInteger(destinationZoneId) || destinationZoneId <= 0)
+  ) {
     return NextResponse.json(
-      {
-        error: `La zona contiene ${count.n} artículo${count.n === 1 ? "" : "s"}. Trasládalos antes de eliminarla.`,
-      },
-      { status: 409 },
+      { error: "La zona de destino no es válida." },
+      { status: 400 },
+    );
+  }
+  if (destinationZoneId === id) {
+    return NextResponse.json(
+      { error: "La zona de destino debe ser diferente." },
+      { status: 400 },
     );
   }
 
-  const [deleted] = await db.delete(zones).where(eq(zones.id, id)).returning();
-  if (!deleted) {
-    return NextResponse.json({ error: "Zona no encontrada." }, { status: 404 });
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [source] = await tx
+        .select()
+        .from(zones)
+        .where(eq(zones.id, id))
+        .for("update");
+      if (!source) throw new Error("SOURCE_NOT_FOUND");
+
+      const zoneItems = await tx
+        .select({ id: items.id, deletedAt: items.deletedAt })
+        .from(items)
+        .where(eq(items.zoneId, id))
+        .for("update");
+      const activeCount = zoneItems.filter((item) => !item.deletedAt).length;
+      const trashCount = zoneItems.length - activeCount;
+
+      if (zoneItems.length > 0 && destinationZoneId === null) {
+        throw new Error(`DESTINATION_REQUIRED:${activeCount}:${trashCount}`);
+      }
+
+      let destinationName: string | null = null;
+      if (destinationZoneId !== null) {
+        const [destination] = await tx
+          .select()
+          .from(zones)
+          .where(eq(zones.id, destinationZoneId))
+          .for("update");
+        if (!destination) throw new Error("DESTINATION_NOT_FOUND");
+        destinationName = destination.name;
+
+        if (zoneItems.length > 0) {
+          const moved = await tx
+            .update(items)
+            .set({
+              zoneId: destinationZoneId,
+              // Una ubicación detallada pertenece a la zona antigua.
+              locationId: null,
+              version: sql`${items.version} + 1`,
+              updatedAt: new Date(),
+            })
+            .where(eq(items.zoneId, id))
+            .returning({ id: items.id });
+
+          await tx.insert(movements).values(
+            moved.map((item) => ({
+              itemId: item.id,
+              type: "TRASLADO",
+              note: `Traslado automático al eliminar zona: ${source.name} → ${destination.name}`,
+            })),
+          );
+        }
+      }
+
+      await tx.delete(zones).where(eq(zones.id, id));
+      return {
+        moved: zoneItems.length,
+        activeCount,
+        trashCount,
+        sourceName: source.name,
+        destinationName,
+      };
+    });
+
+    void ZONE_COLORS;
+    return NextResponse.json({
+      ok: true,
+      ...result,
+      message:
+        result.moved > 0
+          ? `${result.moved} artículo${result.moved === 1 ? " trasladado" : "s trasladados"} a ${result.destinationName}. Zona eliminada.`
+          : "Zona eliminada.",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "SOURCE_NOT_FOUND") {
+      return NextResponse.json(
+        { error: "Zona no encontrada." },
+        { status: 404 },
+      );
+    }
+    if (message === "DESTINATION_NOT_FOUND") {
+      return NextResponse.json(
+        { error: "La zona de destino ya no existe." },
+        { status: 400 },
+      );
+    }
+    if (message.startsWith("DESTINATION_REQUIRED:")) {
+      const [, active, trash] = message.split(":");
+      return NextResponse.json(
+        {
+          error:
+            "La zona contiene artículos. Elige otra zona para trasladarlos antes de eliminarla.",
+          code: "DESTINATION_REQUIRED",
+          activeCount: Number(active),
+          trashCount: Number(trash),
+        },
+        { status: 409 },
+      );
+    }
+    console.error("[zones/delete]", error);
+    return NextResponse.json(
+      { error: "No se pudo eliminar la zona." },
+      { status: 500 },
+    );
   }
-  // El color se conserva en la respuesta por compatibilidad de tipos
-  void ZONE_COLORS;
-  return NextResponse.json({ ok: true });
 }

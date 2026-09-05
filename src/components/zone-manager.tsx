@@ -191,6 +191,7 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
     current: EMPTY,
   });
   const [toDelete, setToDelete] = useState<ZoneWithCount | null>(null);
+  const [destinationZoneId, setDestinationZoneId] = useState<number>(0);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -217,7 +218,19 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
     if (!toDelete) return;
     setDeleting(true);
     setDeleteError(null);
-    const res = await secureFetch(`/api/zones/${toDelete.id}`, { method: "DELETE" });
+    const needsDestination = toDelete.totalCount > 0;
+    if (needsDestination && !destinationZoneId) {
+      setDeleteError("Elige una zona de destino para conservar los artículos.");
+      setDeleting(false);
+      return;
+    }
+    const res = await secureFetch(`/api/zones/${toDelete.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destinationZoneId: needsDestination ? destinationZoneId : null,
+      }),
+    });
     const data = await res.json().catch(() => ({}));
     setDeleting(false);
     if (!res.ok) {
@@ -274,7 +287,7 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                     <span className={cn(zPhoto && "rounded-2xl bg-cream p-1 shadow-lift")}>
                       <ZoneIcon icon={z.icon} color={z.color} size="lg" />
                     </span>
-                    <div className="flex gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100">
+                    <div className="flex gap-1 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
                       <button
                         onClick={() => openEdit(z)}
                         aria-label={`Editar ${z.name}`}
@@ -285,6 +298,9 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                       <button
                         onClick={() => {
                           setToDelete(z);
+                          setDestinationZoneId(
+                            zones.find((candidate) => candidate.id !== z.id)?.id ?? 0,
+                          );
                           setDeleteError(null);
                         }}
                         aria-label={`Eliminar ${z.name}`}
@@ -305,7 +321,12 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                       <span className="font-display text-2xl font-semibold text-ink">
                         {z.itemCount}
                       </span>{" "}
-                      artículos · {z.unitCount} uds.
+                      activos · {z.unitCount} uds.
+                      {z.trashCount > 0 && (
+                        <span className="block text-[0.65rem] text-red-600">
+                          {z.trashCount} en papelera
+                        </span>
+                      )}
                     </p>
                     <Link
                       href={`/inventario?zona=${z.id}`}
@@ -334,10 +355,44 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
         title="Eliminar zona"
         subtitle={toDelete ? toDelete.name : undefined}
       >
-        <p className="text-sm leading-relaxed text-ink-soft">
-          Solo puede eliminarse una zona que no contenga artículos. Traslada
-          primero su contenido a otra zona.
-        </p>
+        {toDelete?.totalCount ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
+              Esta zona contiene <strong>{toDelete.itemCount} artículo{toDelete.itemCount === 1 ? "" : "s"} activo{toDelete.itemCount === 1 ? "" : "s"}</strong>
+              {toDelete.trashCount > 0 && (
+                <> y <strong>{toDelete.trashCount} en papelera</strong></>
+              )}. No se borrará ninguno: todos se trasladarán a la zona elegida,
+              conservando sus códigos e historiales.
+            </div>
+            {zones.filter((zone) => zone.id !== toDelete.id).length > 0 ? (
+              <Field label="Trasladar todo a">
+                <select
+                  value={destinationZoneId}
+                  onChange={(event) => setDestinationZoneId(Number(event.target.value))}
+                  className={inputCls}
+                >
+                  {zones
+                    .filter((zone) => zone.id !== toDelete.id)
+                    .map((zone) => (
+                      <option key={zone.id} value={zone.id}>
+                        {zone.name}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+            ) : (
+              <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                No existe otra zona de destino. Crea una zona nueva antes de
+                eliminar esta, o elimina definitivamente sus artículos desde la
+                papelera.
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm leading-relaxed text-ink-soft">
+            La zona está vacía y puede eliminarse de forma segura.
+          </p>
+        )}
         {deleteError && (
           <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
             {deleteError}
@@ -347,9 +402,19 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
           <Button variant="ghost" onClick={() => setToDelete(null)} disabled={deleting}>
             Cancelar
           </Button>
-          <Button variant="danger" onClick={confirmDelete} disabled={deleting}>
+          <Button
+            variant="danger"
+            onClick={confirmDelete}
+            disabled={
+              deleting ||
+              Boolean(
+                toDelete?.totalCount &&
+                  zones.filter((zone) => zone.id !== toDelete.id).length === 0,
+              )
+            }
+          >
             {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Eliminar zona
+            {toDelete?.totalCount ? "Trasladar y eliminar" : "Eliminar zona"}
           </Button>
         </div>
       </Modal>
