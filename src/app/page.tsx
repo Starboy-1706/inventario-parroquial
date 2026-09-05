@@ -29,7 +29,7 @@ export async function generateMetadata() {
   return authPageMetadata("Panel");
 }
 
-const MOVEMENT_ICONS: Record<MovementType, LucideIcon> = {
+const MOVEMENT_ICONS: Partial<Record<MovementType, LucideIcon>> = {
   ALTA: PlusCircle,
   ENTRADA: ArrowDownLeft,
   SALIDA: ArrowUpRight,
@@ -39,7 +39,7 @@ const MOVEMENT_ICONS: Record<MovementType, LucideIcon> = {
   BAJA: Trash2,
 };
 
-const MOVEMENT_TINT: Record<MovementType, string> = {
+const MOVEMENT_TINT: Partial<Record<MovementType, string>> = {
   ALTA: "bg-emerald-100 text-emerald-700",
   ENTRADA: "bg-emerald-100 text-emerald-700",
   SALIDA: "bg-amber-100 text-amber-700",

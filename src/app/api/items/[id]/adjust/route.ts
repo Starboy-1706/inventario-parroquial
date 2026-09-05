@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { items, movements } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { apiAuthGuard } from "@/lib/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       const type = hasSet ? "AJUSTE" : moved > 0 ? "ENTRADA" : "SALIDA";
       const [row] = await tx
         .update(items)
-        .set({ quantity: newQty, updatedAt: new Date() })
+        .set({ quantity: newQty, version: sql`${items.version} + 1`, updatedAt: new Date() })
         .where(eq(items.id, id))
         .returning();
 

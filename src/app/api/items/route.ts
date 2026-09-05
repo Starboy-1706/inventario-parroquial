@@ -1,177 +1,146 @@
 import { NextRequest, NextResponse } from "next/server";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { items, movements, photos, zones } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getItems } from "@/lib/queries";
-import { CATEGORIES, CONDITIONS, STATUSES } from "@/lib/constants";
-import { zonePrefix } from "@/lib/utils";
+import {
+  appSettings,
+  categories,
+  itemPhotos,
+  items,
+  movements,
+  photos,
+  storageLocations,
+  zones,
+} from "@/db/schema";
 import { apiAuthGuard } from "@/lib/auth";
+import { getItemsPage } from "@/lib/queries";
+import { itemCreateSchema, zodErrorMessage } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
-
-/** Dinero en formato español: "1.200,50" | "1200.5" | number → número limpio. */
-function parseMoneyValue(raw: unknown): { ok: boolean; value: number | null } {
-  if (raw === null || raw === undefined || raw === "") return { ok: true, value: null };
-  if (typeof raw === "number") {
-    return Number.isFinite(raw) && raw >= 0 && raw <= 100_000_000
-      ? { ok: true, value: raw }
-      : { ok: false, value: null };
-  }
-  if (typeof raw === "string") {
-    const clean = raw.trim().replace(/\s|€/g, "");
-    if (!clean) return { ok: true, value: null };
-    const num = clean.includes(",")
-      ? Number(clean.replace(/\./g, "").replace(",", "."))
-      : Number(clean);
-    return Number.isFinite(num) && num >= 0 && num <= 100_000_000
-      ? { ok: true, value: num }
-      : { ok: false, value: null };
-  }
-  return { ok: false, value: null };
-}
 
 export async function GET(request: NextRequest) {
   const denied = await apiAuthGuard();
   if (denied) return denied;
   const sp = request.nextUrl.searchParams;
-  const data = await getItems({
-    zoneId: sp.get("zone") ? Number(sp.get("zone")) : undefined,
+  const zoneValue = Number(sp.get("zone"));
+  const result = await getItemsPage({
+    zoneId: Number.isInteger(zoneValue) && zoneValue > 0 ? zoneValue : undefined,
     type: sp.get("type") ?? undefined,
     status: sp.get("status") ?? undefined,
-    search: sp.get("q") ?? undefined,
+    search: sp.get("q")?.slice(0, 160) ?? undefined,
+    deleted: sp.get("deleted") === "1",
+    page: Number(sp.get("page")) || 1,
+    pageSize: Number(sp.get("pageSize")) || 25,
   });
-  return NextResponse.json(data);
+  return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
 }
 
-function parseItemBody(body: Record<string, unknown>) {
-  const name = String(body.name ?? "").trim();
-  const description = String(body.description ?? "").trim();
-  const notes = String(body.notes ?? "").trim();
-  const zoneId = Number(body.zoneId);
-  const itemType = body.itemType === "CONTABLE" ? "CONTABLE" : "UNICO";
-  if (!name) return { error: "El nombre del artículo es obligatorio." } as const;
-  if (name.length > 160 || description.length > 2_000 || notes.length > 2_000)
-    return { error: "Alguno de los textos supera la longitud permitida." } as const;
-  if (!Number.isInteger(zoneId) || zoneId <= 0)
-    return { error: "Debes indicar una zona válida." } as const;
-
-  const rawQuantity = Number(body.quantity ?? 0);
-  const rawMin = Number(body.minQuantity ?? 0);
-  if (
-    itemType === "CONTABLE" &&
-    (!Number.isFinite(rawQuantity) || rawQuantity < 0 || rawQuantity > 1_000_000)
-  ) {
-    return { error: "La cantidad debe estar entre 0 y 1.000.000." } as const;
+function pgCode(error: unknown, code: string) {
+  let current: unknown = error;
+  for (let i = 0; i < 6 && current; i++) {
+    if (typeof current !== "object") break;
+    const e = current as { code?: string; cause?: unknown };
+    if (e.code === code) return true;
+    current = e.cause;
   }
-  if (!Number.isFinite(rawMin) || rawMin < 0 || rawMin > 1_000_000) {
-    return { error: "El stock mínimo debe estar entre 0 y 1.000.000." } as const;
-  }
-
-  const quantity = itemType === "UNICO" ? 1 : Math.floor(rawQuantity);
-  const minQuantity = itemType === "UNICO" ? 0 : Math.floor(rawMin);
-
-  const status =
-    typeof body.status === "string" &&
-    (STATUSES as readonly string[]).includes(body.status)
-      ? body.status
-      : "DISPONIBLE";
-  const condition =
-    typeof body.condition === "string" &&
-    (CONDITIONS as readonly string[]).includes(body.condition)
-      ? body.condition
-      : "BUENO";
-  const category =
-    typeof body.category === "string" && body.category.trim()
-      ? body.category.trim()
-      : (CATEGORIES[CATEGORIES.length - 1] as string);
-
-  const money = parseMoneyValue(body.estimatedValue);
-  if (!money.ok) {
-    return { error: "El valor estimado no es válido. Ejemplo: 1.200,50" } as const;
-  }
-
-  return {
-    data: {
-      name,
-      description: description || null,
-      category,
-      zoneId,
-      itemType,
-      quantity,
-      minQuantity,
-      status,
-      condition,
-      acquisitionDate:
-        typeof body.acquisitionDate === "string" &&
-        /^\d{4}-\d{2}-\d{2}$/.test(body.acquisitionDate)
-          ? body.acquisitionDate
-          : null,
-      estimatedValue: money.value !== null ? money.value.toFixed(2) : null,
-      notes: notes || null,
-    },
-  } as const;
+  return false;
 }
 
 export async function POST(request: NextRequest) {
   const denied = await apiAuthGuard();
   if (denied) return denied;
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return NextResponse.json({ error: "Datos de artículo no válidos." }, { status: 400 });
-  }
-  const parsed = parseItemBody(body);
-  if ("error" in parsed) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
 
-  const [zone] = await db.select().from(zones).where(eq(zones.id, parsed.data.zoneId));
-  if (!zone) {
-    return NextResponse.json({ error: "La zona indicada no existe." }, { status: 400 });
+  const json = await request.json().catch(() => null);
+  const parsed = itemCreateSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
   }
+  const data = parsed.data;
 
-  let photoId: number | null = null;
-  if (body.photoId !== undefined && body.photoId !== null) {
-    const pid = Number(body.photoId);
-    if (!Number.isInteger(pid) || pid <= 0) {
-      return NextResponse.json({ error: "Foto no válida." }, { status: 400 });
+  const [[zone], [category], [settings]] = await Promise.all([
+    db.select({ id: zones.id, name: zones.name }).from(zones).where(eq(zones.id, data.zoneId)),
+    db.select({ name: categories.name }).from(categories).where(and(eq(categories.name, data.category), eq(categories.active, true))),
+    db.select().from(appSettings).where(eq(appSettings.id, 1)),
+  ]);
+  if (!zone) return NextResponse.json({ error: "La zona indicada no existe." }, { status: 400 });
+  if (!category) return NextResponse.json({ error: "La categoría indicada no está activa." }, { status: 400 });
+
+  if (data.locationId) {
+    const [location] = await db
+      .select({ id: storageLocations.id })
+      .from(storageLocations)
+      .where(and(eq(storageLocations.id, data.locationId), eq(storageLocations.zoneId, data.zoneId)));
+    if (!location) {
+      return NextResponse.json({ error: "La ubicación detallada no pertenece a esa zona." }, { status: 400 });
     }
-    const [photo] = await db
-      .select({ id: photos.id })
-      .from(photos)
-      .where(eq(photos.id, pid));
-    if (!photo) {
+  }
+
+  const allPhotoIds = [...new Set([data.photoId, ...data.photoIds].filter((v): v is number => Boolean(v)))];
+  if (allPhotoIds.length) {
+    const existing = await db.select({ id: photos.id }).from(photos).where(inArray(photos.id, allPhotoIds));
+    if (existing.length !== allPhotoIds.length) {
+      return NextResponse.json({ error: "Alguna fotografía ya no existe." }, { status: 400 });
+    }
+  }
+
+  try {
+    const created = await db.transaction(async (tx) => {
+      const seq = await tx.execute(sql`select nextval('inventory_code_seq')::int as n`);
+      const inventoryNumber = Number(seq.rows[0]?.n);
+      if (!Number.isInteger(inventoryNumber)) throw new Error("SEQUENCE_ERROR");
+      const prefix = (settings?.inventoryPrefix || "PSB").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "PSB";
+      const code = `${prefix}-${String(inventoryNumber).padStart(6, "0")}`;
+
+      const [item] = await tx
+        .insert(items)
+        .values({
+          inventoryNumber,
+          code,
+          externalBarcode: data.externalBarcode,
+          name: data.name,
+          description: data.description,
+          category: data.category,
+          zoneId: data.zoneId,
+          locationId: data.locationId,
+          photoId: data.photoId ?? allPhotoIds[0] ?? null,
+          itemType: data.itemType,
+          quantity: data.quantity,
+          minQuantity: data.minQuantity,
+          status: data.status,
+          condition: data.condition,
+          acquisitionDate: data.acquisitionDate,
+          estimatedValue:
+            data.estimatedValue !== null ? data.estimatedValue.toFixed(2) : null,
+          notes: data.notes,
+        })
+        .returning();
+
+      if (allPhotoIds.length) {
+        await tx.insert(itemPhotos).values(
+          allPhotoIds.map((photoId, index) => ({
+            itemId: item.id,
+            photoId,
+            isPrimary: index === 0,
+            sortOrder: index,
+          })),
+        );
+      }
+      await tx.insert(movements).values({
+        itemId: item.id,
+        type: "ALTA",
+        quantity: item.quantity,
+        note: `Alta en inventario · ${zone.name} · Código permanente ${code}`,
+      });
+      return item;
+    });
+    return NextResponse.json(created, { status: 201 });
+  } catch (error) {
+    if (pgCode(error, "23505")) {
       return NextResponse.json(
-        { error: "La fotografía indicada no existe." },
-        { status: 400 },
+        { error: "El código de barras comercial ya pertenece a otro artículo." },
+        { status: 409 },
       );
     }
-    photoId = pid;
+    console.error("[items/create]", error);
+    return NextResponse.json({ error: "No se pudo completar el alta." }, { status: 500 });
   }
-
-  // Código único en transacción ACID: alta → código definitivo → movimiento ALTA
-  const created = await db.transaction(async (tx) => {
-    const tempCode = `TMP-${crypto.randomUUID()}`;
-    const [inserted] = await tx
-      .insert(items)
-      .values({ ...parsed.data, photoId, code: tempCode })
-      .returning();
-
-    const code = `${zonePrefix(zone.name)}-${String(inserted.id).padStart(4, "0")}`;
-    const [finalItem] = await tx
-      .update(items)
-      .set({ code })
-      .where(eq(items.id, inserted.id))
-      .returning();
-
-    await tx.insert(movements).values({
-      itemId: inserted.id,
-      type: "ALTA",
-      quantity: inserted.quantity,
-      note: `Alta en el inventario · Zona: ${zone.name}`,
-    });
-
-    return finalItem;
-  });
-
-  return NextResponse.json(created, { status: 201 });
 }

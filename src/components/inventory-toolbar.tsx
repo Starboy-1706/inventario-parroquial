@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Download, PackagePlus, Printer, Search } from "lucide-react";
+import { Download, FileUp, ListChecks, PackagePlus, Printer, Search } from "lucide-react";
 import type { Zone } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui";
@@ -23,6 +23,7 @@ export function InventoryToolbar({ zones }: { zones: Zone[] }) {
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value);
     else params.delete(key);
+    params.delete("pagina");
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     });
@@ -70,6 +71,8 @@ export function InventoryToolbar({ zones }: { zones: Zone[] }) {
           <option value="BAJA">Dado de baja</option>
         </select>
         <div className="flex items-center gap-1.5">
+          <Link href="/inventario/importar" className="inline-flex items-center justify-center rounded-full border border-line bg-cream p-2.5 text-ink-soft shadow-card" title="Importar desde Excel"><FileUp className="h-3.5 w-3.5" /></Link>
+          <Link href="/inventario/lotes" className="inline-flex items-center justify-center rounded-full border border-line bg-cream p-2.5 text-ink-soft shadow-card" title="Operaciones por lote"><ListChecks className="h-3.5 w-3.5" /></Link>
           <a
             href="/api/export"
             download

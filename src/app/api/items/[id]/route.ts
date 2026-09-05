@@ -1,32 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { items, movements, photos, zones } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
-import { CONDITIONS, STATUSES } from "@/lib/constants";
+import {
+  itemPhotos,
+  items,
+  loans,
+  maintenanceRecords,
+  movements,
+  photos,
+  storageLocations,
+  zones,
+} from "@/db/schema";
 import { apiAuthGuard } from "@/lib/auth";
+import { itemUpdateSchema, zodErrorMessage } from "@/lib/validation";
 
 type Ctx = { params: Promise<{ id: string }> };
-
-/** Dinero en formato español: "1.200,50" | "1200.5" | number → número limpio. */
-function parseMoneyValue(raw: unknown): { ok: boolean; value: number | null } {
-  if (raw === null || raw === undefined || raw === "") return { ok: true, value: null };
-  if (typeof raw === "number") {
-    return Number.isFinite(raw) && raw >= 0 && raw <= 100_000_000
-      ? { ok: true, value: raw }
-      : { ok: false, value: null };
-  }
-  if (typeof raw === "string") {
-    const clean = raw.trim().replace(/\s|€/g, "");
-    if (!clean) return { ok: true, value: null };
-    const num = clean.includes(",")
-      ? Number(clean.replace(/\./g, "").replace(",", "."))
-      : Number(clean);
-    return Number.isFinite(num) && num >= 0 && num <= 100_000_000
-      ? { ok: true, value: num }
-      : { ok: false, value: null };
-  }
-  return { ok: false, value: null };
-}
 
 async function parseId(ctx: Ctx) {
   const { id } = await ctx.params;
@@ -41,22 +29,41 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
 
   const [row] = await db
-    .select({ item: items, zone: zones })
+    .select({ item: items, zone: zones, location: storageLocations })
     .from(items)
     .innerJoin(zones, eq(items.zoneId, zones.id))
+    .leftJoin(storageLocations, eq(items.locationId, storageLocations.id))
     .where(eq(items.id, id));
+  if (!row) return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
 
-  if (!row) {
-    return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
-  }
+  const [history, gallery, loanRows, maintenance] = await Promise.all([
+    db.select().from(movements).where(eq(movements.itemId, id)).orderBy(asc(movements.createdAt)),
+    db
+      .select({ photoId: itemPhotos.photoId, caption: itemPhotos.caption, isPrimary: itemPhotos.isPrimary })
+      .from(itemPhotos)
+      .where(eq(itemPhotos.itemId, id))
+      .orderBy(asc(itemPhotos.sortOrder)),
+    db.select().from(loans).where(eq(loans.itemId, id)).orderBy(asc(loans.lentAt)),
+    db
+      .select()
+      .from(maintenanceRecords)
+      .where(eq(maintenanceRecords.itemId, id))
+      .orderBy(asc(maintenanceRecords.startedAt)),
+  ]);
+  return NextResponse.json({
+    ...row.item,
+    zone: row.zone,
+    location: row.location,
+    history,
+    gallery,
+    loans: loanRows,
+    maintenance,
+  });
+}
 
-  const history = await db
-    .select()
-    .from(movements)
-    .where(eq(movements.itemId, id))
-    .orderBy(asc(movements.createdAt));
-
-  return NextResponse.json({ ...row.item, zone: row.zone, history });
+function comparable(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  return value === null || value === undefined ? "" : String(value);
 }
 
 export async function PATCH(request: NextRequest, ctx: Ctx) {
@@ -65,196 +72,180 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
 
+  const json = await request.json().catch(() => null);
+  const parsed = itemUpdateSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: zodErrorMessage(parsed.error) }, { status: 400 });
+  }
+  const data = parsed.data;
   const [current] = await db.select().from(items).where(eq(items.id, id));
-  if (!current) {
-    return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+  if (!current) return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+  if (current.deletedAt) {
+    return NextResponse.json({ error: "Restaura el artículo antes de editarlo." }, { status: 409 });
   }
-
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return NextResponse.json({ error: "Datos de artículo no válidos." }, { status: 400 });
-  }
-
-  const updates: Partial<typeof items.$inferInsert> = {};
-  const movementRows: (typeof movements.$inferInsert)[] = [];
-
-  if (typeof body.name === "string") {
-    const name = body.name.trim();
-    if (!name) {
-      return NextResponse.json({ error: "El nombre no puede estar vacío." }, { status: 400 });
-    }
-    if (name.length > 160) {
-      return NextResponse.json({ error: "El nombre es demasiado largo." }, { status: 400 });
-    }
-    updates.name = name;
-  }
-  if (typeof body.description === "string") {
-    if (body.description.length > 2_000) {
-      return NextResponse.json({ error: "La descripción es demasiado larga." }, { status: 400 });
-    }
-    updates.description = body.description.trim() || null;
-  }
-  if (typeof body.category === "string" && body.category.trim()) {
-    updates.category = body.category.trim().slice(0, 120);
-  }
-  if (typeof body.notes === "string") {
-    if (body.notes.length > 2_000) {
-      return NextResponse.json({ error: "Las notas son demasiado largas." }, { status: 400 });
-    }
-    updates.notes = body.notes.trim() || null;
-  }
-  if (typeof body.acquisitionDate === "string") {
-    if (body.acquisitionDate && !/^\d{4}-\d{2}-\d{2}$/.test(body.acquisitionDate)) {
-      return NextResponse.json({ error: "La fecha no tiene un formato válido." }, { status: 400 });
-    }
-    updates.acquisitionDate = body.acquisitionDate || null;
-  }
-
-  const effectiveType =
-    body.itemType === "UNICO" || body.itemType === "CONTABLE"
-      ? body.itemType
-      : current.itemType;
-  if (effectiveType !== current.itemType) updates.itemType = effectiveType;
-
-  if (body.minQuantity !== undefined) {
-    const rawMin = Number(body.minQuantity);
-    if (!Number.isFinite(rawMin) || rawMin < 0 || rawMin > 1_000_000) {
-      return NextResponse.json(
-        { error: "El stock mínimo debe estar entre 0 y 1.000.000." },
-        { status: 400 },
-      );
-    }
-    updates.minQuantity = effectiveType === "UNICO" ? 0 : Math.floor(rawMin);
-  }
-
-  const rawQuantity = body.quantity !== undefined ? Number(body.quantity) : current.quantity;
-  if (
-    effectiveType === "CONTABLE" &&
-    (!Number.isFinite(rawQuantity) || rawQuantity < 0 || rawQuantity > 1_000_000)
-  ) {
+  if (current.version !== data.version) {
     return NextResponse.json(
-      { error: "La cantidad debe estar entre 0 y 1.000.000." },
-      { status: 400 },
+      { error: "Otra persona modificó esta ficha. Recarga la página para no sobrescribir sus cambios." },
+      { status: 409 },
     );
   }
-  const requestedQuantity =
-    effectiveType === "UNICO" ? 1 : Math.floor(rawQuantity);
-  if (requestedQuantity !== current.quantity) {
-    updates.quantity = requestedQuantity;
-    movementRows.push({
-      itemId: id,
-      type: "AJUSTE",
-      quantity: Math.abs(requestedQuantity - current.quantity),
-      note: `Edición de ficha: ${current.quantity} → ${requestedQuantity} uds.`,
+
+  const effectiveZone = data.zoneId ?? current.zoneId;
+  if (data.zoneId !== undefined) {
+    const [zone] = await db.select({ id: zones.id }).from(zones).where(eq(zones.id, effectiveZone));
+    if (!zone) return NextResponse.json({ error: "La zona de destino no existe." }, { status: 400 });
+  }
+  if (data.locationId) {
+    const [location] = await db
+      .select({ id: storageLocations.id })
+      .from(storageLocations)
+      .where(and(eq(storageLocations.id, data.locationId), eq(storageLocations.zoneId, effectiveZone)));
+    if (!location) {
+      return NextResponse.json({ error: "La ubicación detallada no pertenece a la zona." }, { status: 400 });
+    }
+  }
+
+  const effectiveType = data.itemType ?? current.itemType;
+  const quantity = effectiveType === "UNICO" ? 1 : data.quantity ?? current.quantity;
+  const minQuantity = effectiveType === "UNICO" ? 0 : data.minQuantity ?? current.minQuantity;
+  const photoIds = data.photoIds ? [...new Set(data.photoIds)] : undefined;
+  if (photoIds?.length) {
+    const existing = await db.select({ id: photos.id }).from(photos).where(inArray(photos.id, photoIds));
+    if (existing.length !== photoIds.length) {
+      return NextResponse.json({ error: "Alguna fotografía ya no existe." }, { status: 400 });
+    }
+  }
+
+  const changes: string[] = [];
+  const candidate = {
+    name: data.name ?? current.name,
+    description: data.description === undefined ? current.description : data.description,
+    notes: data.notes === undefined ? current.notes : data.notes,
+    category: data.category ?? current.category,
+    zoneId: effectiveZone,
+    locationId: data.locationId === undefined ? current.locationId : data.locationId,
+    photoId:
+      data.photoId === undefined
+        ? photoIds?.[0] ?? current.photoId
+        : data.photoId,
+    itemType: effectiveType,
+    quantity,
+    minQuantity,
+    status: data.status ?? current.status,
+    condition: data.condition ?? current.condition,
+    acquisitionDate:
+      data.acquisitionDate === undefined ? current.acquisitionDate : data.acquisitionDate,
+    estimatedValue:
+      data.estimatedValue === undefined
+        ? current.estimatedValue
+        : data.estimatedValue === null
+          ? null
+          : data.estimatedValue.toFixed(2),
+    externalBarcode:
+      data.externalBarcode === undefined ? current.externalBarcode : data.externalBarcode,
+  };
+  const labels: Record<keyof typeof candidate, string> = {
+    name: "nombre",
+    description: "descripción",
+    notes: "notas",
+    category: "categoría",
+    zoneId: "zona",
+    locationId: "ubicación",
+    photoId: "foto principal",
+    itemType: "tipo",
+    quantity: "cantidad",
+    minQuantity: "stock mínimo",
+    status: "estado",
+    condition: "conservación",
+    acquisitionDate: "fecha de adquisición",
+    estimatedValue: "valor",
+    externalBarcode: "código comercial",
+  };
+  for (const key of Object.keys(candidate) as (keyof typeof candidate)[]) {
+    if (comparable(candidate[key]) !== comparable(current[key])) changes.push(labels[key]);
+  }
+  if (photoIds) changes.push("galería");
+  if (changes.length === 0) {
+    return NextResponse.json({ error: "No hay cambios que guardar." }, { status: 400 });
+  }
+
+  try {
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(items)
+        .set({ ...candidate, version: sql`${items.version} + 1`, updatedAt: new Date() })
+        .where(and(eq(items.id, id), eq(items.version, data.version)))
+        .returning();
+      if (!row) throw new Error("VERSION_CONFLICT");
+
+      if (photoIds) {
+        await tx.delete(itemPhotos).where(eq(itemPhotos.itemId, id));
+        if (photoIds.length) {
+          await tx.insert(itemPhotos).values(
+            photoIds.map((photoId, index) => ({
+              itemId: id,
+              photoId,
+              isPrimary: index === 0,
+              sortOrder: index,
+            })),
+          );
+        }
+      }
+      const movementRows: (typeof movements.$inferInsert)[] = [
+        { itemId: id, type: "EDICION", note: `Campos modificados: ${changes.join(", ")}` },
+      ];
+      if (candidate.zoneId !== current.zoneId) {
+        movementRows.push({ itemId: id, type: "TRASLADO", note: `Zona ${current.zoneId} → ${candidate.zoneId}` });
+      }
+      if (candidate.quantity !== current.quantity) {
+        movementRows.push({
+          itemId: id,
+          type: "AJUSTE",
+          quantity: Math.abs(candidate.quantity - current.quantity),
+          note: `${current.quantity} → ${candidate.quantity} uds.`,
+        });
+      }
+      if (candidate.status !== current.status) {
+        movementRows.push({ itemId: id, type: candidate.status === "BAJA" ? "BAJA" : "ESTADO", note: `${current.status} → ${candidate.status}` });
+      }
+      await tx.insert(movements).values(movementRows);
+      return row;
     });
-  }
-
-  if (body.estimatedValue !== undefined) {
-    const money = parseMoneyValue(body.estimatedValue);
-    if (!money.ok) {
-      return NextResponse.json(
-        { error: "El valor estimado no es válido. Ejemplo: 1.200,50" },
-        { status: 400 },
-      );
+    return NextResponse.json(updated);
+  } catch (error) {
+    if (error instanceof Error && error.message === "VERSION_CONFLICT") {
+      return NextResponse.json({ error: "La ficha cambió mientras editabas. Recárgala e inténtalo otra vez." }, { status: 409 });
     }
-    updates.estimatedValue = money.value !== null ? money.value.toFixed(2) : null;
+    console.error("[items/update]", error);
+    return NextResponse.json({ error: "No se pudo guardar la ficha." }, { status: 500 });
   }
-
-  if (
-    typeof body.condition === "string" &&
-    (CONDITIONS as readonly string[]).includes(body.condition)
-  ) {
-    updates.condition = body.condition;
-  }
-
-  // photoId: null → quitar foto · number → asignar foto existente
-  if ("photoId" in body) {
-    if (body.photoId === null) {
-      updates.photoId = null;
-    } else {
-      const pid = Number(body.photoId);
-      if (!Number.isInteger(pid) || pid <= 0) {
-        return NextResponse.json({ error: "Foto no válida." }, { status: 400 });
-      }
-      const [photo] = await db
-        .select({ id: photos.id })
-        .from(photos)
-        .where(eq(photos.id, pid));
-      if (!photo) {
-        return NextResponse.json(
-          { error: "La fotografía indicada no existe." },
-          { status: 400 },
-        );
-      }
-      updates.photoId = pid;
-    }
-  }
-
-  if (
-    typeof body.status === "string" &&
-    (STATUSES as readonly string[]).includes(body.status) &&
-    body.status !== current.status
-  ) {
-    updates.status = body.status;
-    movementRows.push({
-      itemId: id,
-      type: body.status === "BAJA" ? "BAJA" : "ESTADO",
-      quantity: 0,
-      note: body.statusNote
-        ? String(body.statusNote).slice(0, 500)
-        : `${current.status} → ${body.status}`,
-    });
-  }
-
-  if (body.zoneId !== undefined) {
-    const zoneId = Number(body.zoneId);
-    if (!Number.isInteger(zoneId) || zoneId <= 0) {
-      return NextResponse.json({ error: "La zona indicada no es válida." }, { status: 400 });
-    }
-    if (zoneId !== current.zoneId) {
-      const [fromZone] = await db.select().from(zones).where(eq(zones.id, current.zoneId));
-      const [toZone] = await db.select().from(zones).where(eq(zones.id, zoneId));
-      if (!toZone) {
-        return NextResponse.json({ error: "La zona de destino no existe." }, { status: 400 });
-      }
-      updates.zoneId = zoneId;
-      movementRows.push({
-        itemId: id,
-        type: "TRASLADO",
-        quantity: 0,
-        note: `${fromZone?.name ?? "?"} → ${toZone.name}`,
-      });
-    }
-  }
-
-  if (Object.keys(updates).length === 0 && movementRows.length === 0) {
-    return NextResponse.json({ error: "Sin cambios que aplicar." }, { status: 400 });
-  }
-
-  updates.updatedAt = new Date();
-
-  const updated = await db.transaction(async (tx) => {
-    const [row] = await tx
-      .update(items)
-      .set(updates)
-      .where(eq(items.id, id))
-      .returning();
-    if (movementRows.length) await tx.insert(movements).values(movementRows);
-    return row;
-  });
-
-  return NextResponse.json(updated);
 }
 
-export async function DELETE(_request: NextRequest, ctx: Ctx) {
+/** Envía a la papelera. El borrado físico solo se permite desde la papelera. */
+export async function DELETE(request: NextRequest, ctx: Ctx) {
   const denied = await apiAuthGuard();
   if (denied) return denied;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Artículo no válido." }, { status: 400 });
-
-  const [deleted] = await db.delete(items).where(eq(items.id, id)).returning();
-  if (!deleted) {
-    return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+  const body = await request.json().catch(() => null) as { confirmationCode?: unknown; reason?: unknown } | null;
+  const [current] = await db.select().from(items).where(eq(items.id, id));
+  if (!current) return NextResponse.json({ error: "Artículo no encontrado." }, { status: 404 });
+  if (body?.confirmationCode !== current.code) {
+    return NextResponse.json({ error: `Debes confirmar con el código ${current.code}.` }, { status: 400 });
   }
-  return NextResponse.json({ ok: true });
+  if (current.deletedAt) return NextResponse.json({ error: "El artículo ya está en la papelera." }, { status: 409 });
+
+  const [deleted] = await db
+    .update(items)
+    .set({
+      deletedAt: new Date(),
+      deletedReason: typeof body.reason === "string" ? body.reason.trim().slice(0, 500) || null : null,
+      status: "BAJA",
+      version: sql`${items.version} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(eq(items.id, id))
+    .returning();
+  await db.insert(movements).values({ itemId: id, type: "PAPELERA", note: deleted.deletedReason ?? "Enviado a papelera" });
+  return NextResponse.json({ ok: true, item: deleted });
 }

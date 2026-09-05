@@ -30,7 +30,7 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
     const res = await secureFetch(`/api/items/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, version: item.version }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -52,7 +52,14 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
     }
     setDeleting(true);
     setError(null);
-    const res = await secureFetch(`/api/items/${item.id}`, { method: "DELETE" });
+    const res = await secureFetch(`/api/items/${item.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        confirmationCode: confirmCode.trim().toUpperCase(),
+        reason: "Eliminado desde la ficha",
+      }),
+    });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "No se pudo eliminar.");
@@ -153,20 +160,19 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
       <Modal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        title="Eliminar definitivamente"
-        subtitle={`${item.code} · Borra también todo su historial de movimientos`}
+        title="Enviar a la papelera"
+        subtitle={`${item.code} · Podrás restaurarlo antes del borrado definitivo`}
       >
         <div className="space-y-4">
           <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm leading-relaxed text-amber-900">
-            <strong>Mejor opción:</strong> si el artículo aún existe físicamente,
-            márcalo como <strong>“Dado de baja”</strong>. Desaparecerá del inventario
-            activo pero conservarás todo su historial, y podrás reactivarlo luego.
+            El artículo pasará a la <strong>papelera</strong>. No se perderá su historial
+            y podrás restaurarlo. El borrado definitivo se realiza exclusivamente
+            desde la papelera.
           </div>
 
           <p className="text-sm leading-relaxed text-ink-soft">
-            Si realmente quieres borrar permanentemente{" "}
-            <strong className="text-ink">{item.name}</strong> y su historial, escribe su
-            código exactamente:
+            Para mover <strong className="text-ink">{item.name}</strong> a la papelera,
+            escribe su código exactamente:
           </p>
 
           <div>
@@ -198,7 +204,7 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
               disabled={deleting || confirmCode.trim().toUpperCase() !== item.code}
             >
               {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Eliminar definitivamente
+              Enviar a la papelera
             </Button>
           </div>
         </div>

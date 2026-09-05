@@ -20,9 +20,9 @@ import {
   STATUSES,
   STATUS_LABELS,
 } from "@/lib/constants";
-import type { Zone } from "@/db/schema";
+import type { Category, StorageLocation, Zone } from "@/db/schema";
 import { Button, Field, inputCls } from "@/components/ui";
-import { PhotoUploader } from "@/components/photo-uploader";
+import { PhotoGalleryUploader } from "@/components/photo-gallery-uploader";
 import { secureFetch } from "@/lib/secure-fetch";
 import { cn } from "@/lib/utils";
 
@@ -44,9 +44,13 @@ function parseMoneyInput(raw: string): { ok: boolean; value: number | null } {
 
 export function ItemCreateForm({
   zones,
+  categories,
+  locations,
   defaultZoneId,
 }: {
   zones: Zone[];
+  categories: Category[];
+  locations: StorageLocation[];
   defaultZoneId?: number;
 }) {
   const router = useRouter();
@@ -54,15 +58,16 @@ export function ItemCreateForm({
   const [serverError, setServerError] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [itemType, setItemType] = useState<string>("UNICO");
-  const [photoId, setPhotoId] = useState<number | null>(null);
+  const [photoIds, setPhotoIds] = useState<number[]>([]);
   const [money, setMoney] = useState("");
+  const [selectedZoneId, setSelectedZoneId] = useState(defaultZoneId ?? zones[0]?.id ?? 0);
   const [created, setCreated] = useState<{ id: number; code: string } | null>(null);
 
-  function resetForAnother(form: HTMLFormElement) {
-    form.reset();
+  function resetForAnother() {
     setItemType("UNICO");
-    setPhotoId(null);
+    setPhotoIds([]);
     setMoney("");
+    setSelectedZoneId(defaultZoneId ?? zones[0]?.id ?? 0);
     setErrors({});
     setServerError(null);
     setCreated(null);
@@ -113,6 +118,9 @@ export function ItemCreateForm({
     const payload = {
       name,
       zoneId,
+      locationId: Number(fd.get("locationId")) || null,
+      externalBarcode: String(fd.get("externalBarcode") ?? "").trim() || null,
+      photoIds,
       itemType,
       quantity,
       minQuantity,
@@ -123,7 +131,7 @@ export function ItemCreateForm({
       estimatedValue: parsedMoney.value,
       description: String(fd.get("description") ?? ""),
       notes: String(fd.get("notes") ?? ""),
-      photoId,
+      photoId: photoIds[0] ?? null,
     };
 
     try {
@@ -179,10 +187,7 @@ export function ItemCreateForm({
             </Button>
             <Button
               variant="primary"
-              onClick={() => {
-                const form = document.querySelector("form[data-item-form]") as HTMLFormElement | null;
-                if (form) resetForAnother(form);
-              }}
+              onClick={resetForAnother}
             >
               <PackagePlus className="h-4 w-4" />
               Añadir otro artículo
@@ -279,7 +284,8 @@ export function ItemCreateForm({
                     <select
                       name="zoneId"
                       required
-                      defaultValue={defaultZoneId ?? zones[0]?.id}
+                      value={selectedZoneId}
+                      onChange={(e) => setSelectedZoneId(Number(e.target.value))}
                       className={cn(inputCls, errors.zoneId && "border-red-300 ring-red-100")}
                     >
                       {zones.map((z) => (
@@ -294,13 +300,22 @@ export function ItemCreateForm({
                   )}
                 </div>
                 <Field label="Categoría">
-                  <select name="category" defaultValue={CATEGORIES[0]} className={inputCls}>
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
+                  <select name="category" defaultValue={categories[0]?.name} className={inputCls}>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
                     ))}
                   </select>
+                </Field>
+                <Field label="Ubicación detallada" hint="Armario, estante o caja (opcional)">
+                  <select name="locationId" defaultValue="" className={inputCls}>
+                    <option value="">Sin detallar</option>
+                    {locations.filter((l) => l.zoneId === selectedZoneId).map((l) => (
+                      <option key={l.id} value={l.id}>{l.parentId ? "↳ " : ""}{l.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Código de barras comercial" hint="EAN, UPC o Code-128 (opcional)">
+                  <input name="externalBarcode" maxLength={128} placeholder="Escanéalo o escríbelo" className={`${inputCls} font-mono`} />
                 </Field>
               </div>
             </div>
@@ -455,7 +470,7 @@ export function ItemCreateForm({
               Fotografía
             </h2>
             <div className="mt-4">
-              <PhotoUploader value={photoId} onChange={setPhotoId} />
+              <PhotoGalleryUploader value={photoIds} onChange={setPhotoIds} />
             </div>
           </section>
 
@@ -507,3 +522,4 @@ export function ItemCreateForm({
     </div>
   );
 }
+

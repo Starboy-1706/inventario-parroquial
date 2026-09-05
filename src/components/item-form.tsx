@@ -132,6 +132,7 @@ export function ItemForm({
     setPending(true);
 
     const payload = {
+      version: item?.version,
       name,
       zoneId,
       itemType,

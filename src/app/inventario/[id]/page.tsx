@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { asc, eq, desc } from "drizzle-orm";
+import { asc, eq, desc, and, isNull } from "drizzle-orm";
 import { ArrowLeft, Calendar, Coins, Layers, MapPin, ScrollText, Tag } from "lucide-react";
 import { db } from "@/db";
-import { items, movements, zones } from "@/db/schema";
+import { itemPhotos, items, loans, maintenanceRecords, movements, storageLocations, zones } from "@/db/schema";
 import {
   ConditionBadge,
   StatusBadge,
@@ -14,6 +14,7 @@ import { MovementIcon } from "@/components/movement-icon";
 import { QrLabel } from "@/components/qr-label";
 import { StockAdjuster } from "@/components/stock-adjuster";
 import { ItemActions } from "@/components/item-actions";
+import { ItemCarePanel } from "@/components/item-care-panel";
 import { MOVEMENT_LABELS, type MovementType } from "@/lib/constants";
 import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
 import { formatDate, formatDateTime, formatMoney, photoUrl } from "@/lib/utils";
@@ -33,26 +34,35 @@ export default async function ItemDetailPage({ params }: Props) {
   if (!Number.isInteger(id) || id <= 0) notFound();
 
   const [row] = await db
-    .select({ item: items, zone: zones })
+    .select({ item: items, zone: zones, location: storageLocations })
     .from(items)
     .innerJoin(zones, eq(items.zoneId, zones.id))
-    .where(eq(items.id, id));
+    .leftJoin(storageLocations, eq(items.locationId, storageLocations.id))
+    .where(and(eq(items.id, id), isNull(items.deletedAt)));
   if (!row) notFound();
 
-  const [history, allZones] = await Promise.all([
+  const [history, allZones, loanRows, maintenanceRows, gallery] = await Promise.all([
     db
       .select()
       .from(movements)
       .where(eq(movements.itemId, id))
       .orderBy(desc(movements.createdAt)),
     db.select().from(zones).orderBy(asc(zones.name)),
+    db.select().from(loans).where(eq(loans.itemId, id)).orderBy(desc(loans.lentAt)),
+    db.select().from(maintenanceRecords).where(eq(maintenanceRecords.itemId, id)).orderBy(desc(maintenanceRecords.startedAt)),
+    db.select({ photoId: itemPhotos.photoId }).from(itemPhotos).where(eq(itemPhotos.itemId, id)).orderBy(asc(itemPhotos.sortOrder)),
   ]);
 
   const { item, zone } = row;
+  const galleryIds = gallery.length
+    ? gallery.map((p) => p.photoId)
+    : item.photoId
+      ? [item.photoId]
+      : [];
 
   const meta = [
     { icon: Tag, label: "Categoría", value: item.category },
-    { icon: MapPin, label: "Zona", value: zone.name },
+    { icon: MapPin, label: "Zona", value: row.location ? `${zone.name} · ${row.location.name}` : zone.name },
     {
       icon: Calendar,
       label: "Adquisición",
@@ -157,6 +167,14 @@ export default async function ItemDetailPage({ params }: Props) {
             )}
           </div>
 
+          <ItemCarePanel
+            itemId={item.id}
+            itemType={item.itemType}
+            quantity={item.quantity}
+            loans={loanRows}
+            maintenance={maintenanceRows}
+          />
+
           {/* ---------- Historial ---------- */}
           <section
             className="animate-fade-up rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6"
@@ -196,28 +214,18 @@ export default async function ItemDetailPage({ params }: Props) {
 
         {/* ---------- Columna lateral ---------- */}
         <div className="space-y-6">
-          {item.photoId && (
-            <figure
-              className="animate-fade-up overflow-hidden rounded-3xl border border-line bg-cream shadow-card"
-              style={{ animationDelay: "100ms" }}
-            >
-              <div className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photoUrl(item.photoId) ?? ""}
-                  alt={`Fotografía de ${item.name}`}
-                  className="aspect-[4/3] w-full object-cover"
-                />
-                <figcaption className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-ink/70 to-transparent px-4 pb-3 pt-10">
-                  <span className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-cream/90">
-                    Fotografía del artículo
-                  </span>
-                  <span className="rounded-full bg-ink/50 px-2.5 py-0.5 font-mono text-[0.65rem] font-semibold text-gold-soft backdrop-blur-sm">
-                    {item.code}
-                  </span>
-                </figcaption>
+          {galleryIds.length > 0 && (
+            <section className="animate-fade-up overflow-hidden rounded-3xl border border-line bg-cream p-3 shadow-card" style={{ animationDelay: "100ms" }}>
+              <div className={galleryIds.length > 1 ? "grid grid-cols-2 gap-2" : ""}>
+                {galleryIds.map((photoId, index) => (
+                  <figure key={photoId} className="relative overflow-hidden rounded-2xl">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photoUrl(photoId) ?? ""} alt={`Fotografía ${index + 1} de ${item.name}`} className="aspect-[4/3] w-full object-cover" />
+                    <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent px-3 pb-2 pt-8 text-[0.6rem] font-semibold uppercase tracking-wider text-cream">{index === 0 ? "Principal" : `Detalle ${index + 1}`}</figcaption>
+                  </figure>
+                ))}
               </div>
-            </figure>
+            </section>
           )}
           <div className="animate-fade-up" style={{ animationDelay: "140ms" }}>
             <QrLabel itemId={item.id} code={item.code} />

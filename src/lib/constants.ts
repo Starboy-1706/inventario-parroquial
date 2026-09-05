@@ -65,18 +65,24 @@ export const MOVEMENT_TYPES = [
   "AJUSTE",
   "TRASLADO",
   "ESTADO",
+  "EDICION",
   "BAJA",
+  "PAPELERA",
+  "RESTAURACION",
+  "PRESTAMO",
+  "DEVOLUCION",
+  "MANTENIMIENTO",
+  "MANTENIMIENTO_FIN",
 ] as const;
 export type MovementType = (typeof MOVEMENT_TYPES)[number];
 
 export const MOVEMENT_LABELS: Record<MovementType, string> = {
-  ALTA: "Alta en inventario",
-  ENTRADA: "Entrada",
-  SALIDA: "Salida",
-  AJUSTE: "Ajuste de recuento",
-  TRASLADO: "Traslado de zona",
-  ESTADO: "Cambio de estado",
-  BAJA: "Baja",
+  ALTA: "Alta en inventario", ENTRADA: "Entrada", SALIDA: "Salida",
+  AJUSTE: "Ajuste de recuento", TRASLADO: "Traslado de zona",
+  ESTADO: "Cambio de estado", EDICION: "Edición de ficha", BAJA: "Baja",
+  PAPELERA: "Enviado a papelera", RESTAURACION: "Restaurado",
+  PRESTAMO: "Préstamo", DEVOLUCION: "Devolución",
+  MANTENIMIENTO: "Inicio de mantenimiento", MANTENIMIENTO_FIN: "Fin de mantenimiento",
 };
 
 export const CATEGORIES = [

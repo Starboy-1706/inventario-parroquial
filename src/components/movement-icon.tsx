@@ -11,7 +11,7 @@ import {
 import type { MovementType } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-const ICONS: Record<MovementType, LucideIcon> = {
+const ICONS: Partial<Record<MovementType, LucideIcon>> = {
   ALTA: PlusCircle,
   ENTRADA: ArrowDownLeft,
   SALIDA: ArrowUpRight,
@@ -21,7 +21,7 @@ const ICONS: Record<MovementType, LucideIcon> = {
   BAJA: Trash2,
 };
 
-const TINTS: Record<MovementType, string> = {
+const TINTS: Partial<Record<MovementType, string>> = {
   ALTA: "bg-emerald-100 text-emerald-700 border-emerald-200",
   ENTRADA: "bg-emerald-100 text-emerald-700 border-emerald-200",
   SALIDA: "bg-amber-100 text-amber-700 border-amber-200",
