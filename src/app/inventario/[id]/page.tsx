@@ -220,7 +220,7 @@ export default async function ItemDetailPage({ params }: Props) {
             </figure>
           )}
           <div className="animate-fade-up" style={{ animationDelay: "140ms" }}>
-            <QrLabel code={item.code} name={item.name} zoneName={zone.name} />
+            <QrLabel itemId={item.id} code={item.code} />
           </div>
           <div className="animate-fade-up" style={{ animationDelay: "220ms" }}>
             <ItemActions item={item} zones={allZones} />
