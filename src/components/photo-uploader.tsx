@@ -4,6 +4,7 @@ import { secureFetch } from "@/lib/secure-fetch";
 
 import { useRef, useState, type ChangeEvent } from "react";
 import { Camera, ImagePlus, Loader2, RefreshCcw, Trash2 } from "lucide-react";
+import { PhotoFrame } from "@/components/photo-frame";
 import { cn, photoUrl } from "@/lib/utils";
 
 /**
@@ -129,14 +130,14 @@ export function PhotoUploader({
       />
 
       {url ? (
-        <div className="group relative overflow-hidden rounded-2xl border border-line bg-paper-deep">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <div className="group relative overflow-hidden rounded-2xl border border-line bg-paper-deep shadow-sm">
+          <PhotoFrame
             src={url}
             alt="Fotografía actual"
-            className="aspect-[16/10] w-full object-cover"
+            aspect="landscape"
+            imageClassName="group-hover:scale-[1.015]"
           />
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 bg-gradient-to-t from-ink/70 to-transparent p-2.5 pt-8 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+          <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-end gap-1.5 bg-gradient-to-t from-ink/75 to-transparent p-2.5 pt-10 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
             <button
               type="button"
               onClick={() => inputRef.current?.click()}

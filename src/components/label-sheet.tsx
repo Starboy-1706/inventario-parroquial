@@ -86,15 +86,18 @@ function Label({
   );
 }
 
-export function LabelSheet({ item, zone }: { item: Item; zone: Zone }) {
+export function LabelSheet({
+  item,
+  zone,
+  baseUrl,
+}: {
+  item: Item;
+  zone: Zone;
+  baseUrl: string;
+}) {
   const [optIdx, setOptIdx] = useState(0);
-  const [origin, setOrigin] = useState("");
   const opt = OPTIONS[optIdx];
-  const url = `${origin || "https://parroquia-santa-barbara"}/escaner?code=${item.code}`;
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
+  const url = `${baseUrl}/escaner?code=${item.code}`;
 
   // Abrir el diálogo de impresión automáticamente al cargar
   useEffect(() => {

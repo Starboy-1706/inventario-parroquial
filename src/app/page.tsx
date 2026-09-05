@@ -18,9 +18,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getDashboardStats, getZonesWithCounts } from "@/lib/queries";
-import { cn, formatMoney, photoUrl, timeAgo } from "@/lib/utils";
+import { formatMoney, photoUrl, timeAgo } from "@/lib/utils";
 import { MOVEMENT_LABELS, type MovementType } from "@/lib/constants";
 import { StatusBadge, ZoneIcon } from "@/components/ui";
+import { PhotoFrame } from "@/components/photo-frame";
 import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -196,26 +197,21 @@ export default async function DashboardPage() {
                       className="absolute inset-x-0 top-0 z-10 h-1 opacity-80"
                       style={{ backgroundColor: z.color }}
                     />
-                    {zPhoto && (
-                      <div className="relative h-28 w-full overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={zPhoto}
-                          alt={`Fotografía de ${z.name}`}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <span className="absolute inset-0 bg-gradient-to-t from-ink/45 via-transparent to-transparent" />
-                      </div>
-                    )}
+                    <PhotoFrame
+                      src={zPhoto}
+                      alt={`Fotografía de ${z.name}`}
+                      aspect="wide"
+                      imageClassName="group-hover:scale-[1.025]"
+                      className="border-b border-line-soft"
+                      overlay={
+                        <span className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-ink/40 to-transparent" />
+                      }
+                    />
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-3">
-                        {zPhoto ? (
-                          <span className={cn(zPhoto && "-mt-9 rounded-2xl bg-cream p-1 shadow-lift", "relative")}>
-                            <ZoneIcon icon={z.icon} color={z.color} />
-                          </span>
-                        ) : (
+                        <span className="relative -mt-9 rounded-2xl border border-line-soft bg-cream p-1 shadow-lift">
                           <ZoneIcon icon={z.icon} color={z.color} />
-                        )}
+                        </span>
                         <ArrowUpRight className="h-4 w-4 text-ink-faint opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:opacity-100" />
                       </div>
                       <h3 className="mt-3.5 font-display text-lg font-semibold leading-tight text-ink">

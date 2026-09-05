@@ -15,9 +15,10 @@ import { QrLabel } from "@/components/qr-label";
 import { StockAdjuster } from "@/components/stock-adjuster";
 import { ItemActions } from "@/components/item-actions";
 import { ItemCarePanel } from "@/components/item-care-panel";
+import { PhotoFrame } from "@/components/photo-frame";
 import { MOVEMENT_LABELS, type MovementType } from "@/lib/constants";
 import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
-import { formatDate, formatDateTime, formatMoney, photoUrl } from "@/lib/utils";
+import { cn, formatDate, formatDateTime, formatMoney, photoUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -218,10 +219,23 @@ export default async function ItemDetailPage({ params }: Props) {
             <section className="animate-fade-up overflow-hidden rounded-3xl border border-line bg-cream p-3 shadow-card" style={{ animationDelay: "100ms" }}>
               <div className={galleryIds.length > 1 ? "grid grid-cols-2 gap-2" : ""}>
                 {galleryIds.map((photoId, index) => (
-                  <figure key={photoId} className="relative overflow-hidden rounded-2xl">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photoUrl(photoId) ?? ""} alt={`Fotografía ${index + 1} de ${item.name}`} className="aspect-[4/3] w-full object-cover" />
-                    <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent px-3 pb-2 pt-8 text-[0.6rem] font-semibold uppercase tracking-wider text-cream">{index === 0 ? "Principal" : `Detalle ${index + 1}`}</figcaption>
+                  <figure
+                    key={photoId}
+                    className={cn(
+                      "overflow-hidden rounded-2xl border border-line-soft",
+                      index === 0 && galleryIds.length > 1 && "col-span-2",
+                    )}
+                  >
+                    <PhotoFrame
+                      src={photoUrl(photoId)}
+                      alt={`Fotografía ${index + 1} de ${item.name}`}
+                      aspect={index === 0 ? "landscape" : "standard"}
+                      overlay={
+                        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/75 to-transparent px-3 pb-2.5 pt-10 text-[0.6rem] font-semibold uppercase tracking-wider text-cream">
+                          {index === 0 ? "Fotografía principal" : `Detalle ${index + 1}`}
+                        </figcaption>
+                      }
+                    />
                   </figure>
                 ))}
               </div>

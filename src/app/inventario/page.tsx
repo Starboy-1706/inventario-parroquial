@@ -7,6 +7,7 @@ import { getItemsPage } from "@/lib/queries";
 import { StatusBadge, TypeBadge } from "@/components/ui";
 import { EmptyState } from "@/components/empty-state";
 import { InventoryToolbar } from "@/components/inventory-toolbar";
+import { PhotoFrame } from "@/components/photo-frame";
 import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
 import { cn, photoUrl } from "@/lib/utils";
 
@@ -70,34 +71,93 @@ export default async function InventarioPage({ searchParams }: { searchParams: S
         {result.data.length === 0 ? (
           <EmptyState icon={Boxes} title="Sin resultados" description="No hay artículos que coincidan. Quita filtros o da de alta uno nuevo." />
         ) : (
-          <ul className="overflow-hidden rounded-2xl border border-line bg-cream shadow-card">
-            {result.data.map((it, i) => {
-              const lowStock = it.itemType === "CONTABLE" && it.minQuantity > 0 && it.quantity <= it.minQuantity;
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {result.data.map((it) => {
+              const lowStock =
+                it.itemType === "CONTABLE" &&
+                it.minQuantity > 0 &&
+                it.quantity <= it.minQuantity;
+              const image = it.photoId
+                ? `${photoUrl(it.photoId)}?thumb=1`
+                : null;
+
               return (
-                <li key={it.id} className={cn(i !== 0 && "border-t border-line-soft")}>
-                  <Link href={`/inventario/${it.id}`} className="group relative flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-paper/60 sm:gap-5 sm:px-5">
-                    <span className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: it.zoneColor }} />
-                    {it.photoId && (
-                      <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-line sm:h-12 sm:w-12">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`${photoUrl(it.photoId)}?thumb=1`} alt="" className="h-full w-full object-cover" />
-                      </span>
-                    )}
-                    <span className="hidden shrink-0 rounded-lg border border-line bg-white px-2.5 py-1.5 font-mono text-[0.7rem] font-semibold tracking-wide text-ink-soft sm:block">{it.code}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-ink sm:text-[0.95rem]">{it.name}</p>
-                      <p className="mt-0.5 truncate text-xs text-ink-soft">
-                        <span className="font-mono text-[0.68rem] sm:hidden">{it.code} · </span>
-                        {it.zoneName}<span className="mx-1.5 text-ink-faint">·</span>{it.category}
+                <li
+                  key={it.id}
+                  className="group min-w-0 overflow-hidden rounded-3xl border border-line bg-cream shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-ink/15 hover:shadow-lift"
+                >
+                  <Link href={`/inventario/${it.id}`} className="flex h-full flex-col">
+                    <PhotoFrame
+                      src={image}
+                      alt={`Fotografía de ${it.name}`}
+                      aspect="landscape"
+                      imageClassName="group-hover:scale-[1.025]"
+                      className="border-b border-line-soft"
+                      overlay={
+                        <>
+                          <span className="absolute left-3 top-3 rounded-lg border border-white/20 bg-ink/75 px-2.5 py-1 font-mono text-[0.65rem] font-bold tracking-[0.12em] text-white shadow-sm backdrop-blur-md">
+                            {it.code}
+                          </span>
+                          <span
+                            className="absolute bottom-3 left-3 max-w-[75%] truncate rounded-full border border-white/20 px-2.5 py-1 text-[0.65rem] font-bold text-white shadow-sm backdrop-blur-md"
+                            style={{ backgroundColor: `${it.zoneColor}E6` }}
+                          >
+                            {it.zoneName}
+                          </span>
+                        </>
+                      }
+                    />
+
+                    <div className="flex flex-1 flex-col p-4">
+                      <h2 className="line-clamp-2 min-h-11 font-display text-lg font-semibold leading-snug tracking-tight text-ink">
+                        {it.name}
+                      </h2>
+                      <p className="mt-1 line-clamp-1 text-xs text-ink-soft">
+                        {it.category}
                       </p>
+
+                      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                        <TypeBadge type={it.itemType} />
+                        {it.itemType === "UNICO" && (
+                          <StatusBadge status={it.status} />
+                        )}
+                      </div>
+
+                      <div className="mt-auto flex items-end justify-between gap-3 border-t border-line-soft pt-4">
+                        {it.itemType === "CONTABLE" ? (
+                          <div>
+                            <p
+                              className={cn(
+                                "font-display text-2xl font-semibold leading-none",
+                                lowStock ? "text-red-700" : "text-ink",
+                              )}
+                            >
+                              {it.quantity}{" "}
+                              <span className="font-sans text-[0.65rem] font-medium uppercase tracking-wider text-ink-faint">
+                                uds.
+                              </span>
+                            </p>
+                            <p
+                              className={cn(
+                                "mt-1 text-[0.62rem] font-semibold",
+                                lowStock ? "text-red-600" : "text-ink-faint",
+                              )}
+                            >
+                              {lowStock
+                                ? `Stock bajo · mínimo ${it.minQuantity}`
+                                : `Mínimo ${it.minQuantity}`}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-[0.68rem] font-medium text-ink-faint">
+                            Conservación · {it.condition.toLowerCase()}
+                          </p>
+                        )}
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-white text-ink-faint transition-all group-hover:border-gold/40 group-hover:bg-gold/10 group-hover:text-gold-deep">
+                          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </div>
                     </div>
-                    <div className="hidden shrink-0 md:block"><TypeBadge type={it.itemType} /></div>
-                    <div className="shrink-0 text-right">
-                      {it.itemType === "CONTABLE" ? (
-                        <><p className={cn("font-display text-lg font-semibold leading-none", lowStock ? "text-red-700" : "text-ink")}>{it.quantity} <span className="font-sans text-[0.65rem] font-medium text-ink-faint">uds.</span></p>{lowStock && <p className="mt-1 text-[0.62rem] font-bold uppercase tracking-wide text-red-600">stock bajo</p>}</>
-                      ) : <StatusBadge status={it.status} />}
-                    </div>
-                    <ChevronRight className="hidden h-4 w-4 shrink-0 text-ink-faint transition-transform group-hover:translate-x-0.5 sm:block" />
                   </Link>
                 </li>
               );

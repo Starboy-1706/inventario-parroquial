@@ -17,6 +17,7 @@ import { ZONE_COLORS, ZONE_ICONS } from "@/lib/constants";
 import { Button, Field, Modal, ZoneIcon, inputCls } from "@/components/ui";
 import { EmptyState } from "@/components/empty-state";
 import { PhotoUploader } from "@/components/photo-uploader";
+import { PhotoFrame } from "@/components/photo-frame";
 import { cn, photoUrl } from "@/lib/utils";
 import { MapPinned } from "lucide-react";
 
@@ -267,24 +268,23 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                 key={z.id}
                 className="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-cream shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
               >
-                {zPhoto && (
-                  <div className="relative h-36 w-full overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={zPhoto}
-                      alt={`Fotografía de ${z.name}`}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <span className="absolute inset-0 bg-gradient-to-t from-ink/40 via-transparent to-transparent" />
-                  </div>
-                )}
+                <PhotoFrame
+                  src={zPhoto}
+                  alt={`Fotografía de ${z.name}`}
+                  aspect="wide"
+                  imageClassName="group-hover:scale-[1.025]"
+                  className="border-b border-line-soft"
+                  overlay={
+                    <span className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-ink/45 to-transparent" />
+                  }
+                />
                 <span
                   className="absolute inset-x-0 top-0 z-10 h-1.5"
                   style={{ backgroundColor: z.color }}
                 />
                 <div className="flex flex-1 flex-col p-5">
-                  <div className={cn("flex items-start justify-between", zPhoto && "-mt-10")}>
-                    <span className={cn(zPhoto && "rounded-2xl bg-cream p-1 shadow-lift")}>
+                  <div className="-mt-10 flex items-start justify-between">
+                    <span className="relative rounded-2xl border border-line-soft bg-cream p-1 shadow-lift">
                       <ZoneIcon icon={z.icon} color={z.color} size="lg" />
                     </span>
                     <div className="flex gap-1 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">

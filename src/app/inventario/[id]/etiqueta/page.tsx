@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { items, zones } from "@/db/schema";
@@ -29,5 +30,11 @@ export default async function EtiquetaPage({
 
   if (!row) notFound();
 
-  return <LabelSheet item={row.item} zone={row.zone} />;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const protocol =
+    h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const baseUrl = `${protocol}://${host}`;
+
+  return <LabelSheet item={row.item} zone={row.zone} baseUrl={baseUrl} />;
 }

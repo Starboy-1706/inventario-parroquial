@@ -23,6 +23,7 @@ import type { Html5Qrcode as Html5QrcodeType } from "html5-qrcode";
 import type { Item, Zone } from "@/db/schema";
 import { extractCode, photoUrl } from "@/lib/utils";
 import { Button, StatusBadge, TypeBadge, inputCls } from "@/components/ui";
+import { PhotoFrame } from "@/components/photo-frame";
 import { cn } from "@/lib/utils";
 
 type ScannedItem = Item & { zone: Zone };
@@ -386,15 +387,15 @@ export function Scanner() {
             style={{ backgroundColor: item.zone.color }}
           />
           {item.photoId && (
-            <div className="relative h-44 w-full overflow-hidden sm:h-56">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={photoUrl(item.photoId) ?? ""}
-                alt={`Fotografía de ${item.name}`}
-                className="h-full w-full object-cover"
-              />
-              <span className="absolute inset-0 bg-gradient-to-t from-cream via-transparent to-transparent" />
-            </div>
+            <PhotoFrame
+              src={photoUrl(item.photoId)}
+              alt={`Fotografía de ${item.name}`}
+              aspect="landscape"
+              className="border-b border-line-soft"
+              overlay={
+                <span className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-cream to-transparent" />
+              }
+            />
           )}
           <div className="p-5 sm:p-7">
             <div className="flex flex-wrap items-center gap-2">
