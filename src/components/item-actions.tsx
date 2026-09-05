@@ -2,42 +2,59 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, PencilLine, Trash2 } from "lucide-react";
+import { Archive, Loader2, PencilLine, Trash2, Undo2 } from "lucide-react";
 import type { Item, Zone } from "@/db/schema";
 import { STATUSES, STATUS_LABELS } from "@/lib/constants";
-import { Button, Modal } from "@/components/ui";
+import { Button, Modal, inputCls } from "@/components/ui";
 import { ItemForm } from "@/components/item-form";
+import { secureFetch } from "@/lib/secure-fetch";
 import { cn } from "@/lib/utils";
 
 export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmCode, setConfirmCode] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  function notice(msg: string) {
+    setFlash(msg);
+    setTimeout(() => setFlash(null), 3500);
+  }
 
   async function changeStatus(status: string) {
     setError(null);
-    const res = await fetch(`/api/items/${item.id}`, {
+    const res = await secureFetch(`/api/items/${item.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
     if (!res.ok) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       setError(data.error ?? "No se pudo cambiar el estado.");
       return;
     }
+    notice(
+      status === "BAJA"
+        ? "Artículo dado de baja. Su historial queda conservado."
+        : `Estado actualizado: ${STATUS_LABELS[status as never] ?? status}.`,
+    );
     startTransition(() => router.refresh());
   }
 
   async function remove() {
+    if (confirmCode.trim().toUpperCase() !== item.code) {
+      setError(`Escribe exactamente $${item.code} para confirmar.`.replace("$", ""));
+      return;
+    }
     setDeleting(true);
     setError(null);
-    const res = await fetch(`/api/items/${item.id}`, { method: "DELETE" });
+    const res = await secureFetch(`/api/items/${item.id}`, { method: "DELETE" });
     if (!res.ok) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       setError(data.error ?? "No se pudo eliminar.");
       setDeleting(false);
       return;
@@ -45,6 +62,8 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
     router.push("/inventario");
     router.refresh();
   }
+
+  const isBaja = item.status === "BAJA";
 
   return (
     <div className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
@@ -62,7 +81,7 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
               <button
                 key={s}
                 disabled={item.status === s}
-                onClick={() => changeStatus(s)}
+                onClick={() => void changeStatus(s)}
                 className={cn(
                   "cursor-pointer rounded-xl border px-2.5 py-2 text-[0.7rem] font-semibold transition",
                   item.status === s
@@ -76,52 +95,112 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 border-t border-line-soft pt-4">
+        <div className="flex flex-col gap-2 border-t border-line-soft pt-4 sm:flex-row">
           <Button variant="dark" size="sm" onClick={() => setEditOpen(true)} className="w-full justify-center">
             <PencilLine className="h-3.5 w-3.5" />
             Editar ficha
           </Button>
-          <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)} className="w-full justify-center">
+          {!isBaja ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void changeStatus("BAJA")}
+              className="w-full justify-center"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Dar de baja
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void changeStatus("DISPONIBLE")}
+              className="w-full justify-center"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              Reactivar
+            </Button>
+          )}
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => {
+              setConfirmCode("");
+              setError(null);
+              setDeleteOpen(true);
+            }}
+            className="w-full justify-center"
+          >
             <Trash2 className="h-3.5 w-3.5" />
             Eliminar
           </Button>
         </div>
 
-        {error && (
+        {error && !deleteOpen && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-medium text-red-700">
             {error}
           </p>
         )}
+        {flash && (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700">
+            {flash}
+          </p>
+        )}
       </div>
 
-      <ItemForm
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        zones={zones}
-        item={item}
-      />
+      <ItemForm open={editOpen} onClose={() => setEditOpen(false)} zones={zones} item={item} />
 
       <Modal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        title="Eliminar artículo"
-        subtitle={`${item.code} · Esta acción borra también su historial de movimientos`}
+        title="Eliminar definitivamente"
+        subtitle={`${item.code} · Borra también todo su historial de movimientos`}
       >
-        <p className="text-sm leading-relaxed text-ink-soft">
-          ¿Seguro que quieres eliminar{" "}
-          <strong className="text-ink">{item.name}</strong> del inventario? Si
-          el artículo sigue existiendo pero ya no se usa, considera marcarlo
-          como <strong className="text-ink">“Dado de baja”</strong> para
-          conservar su historial.
-        </p>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => setDeleteOpen(false)} disabled={deleting}>
-            Cancelar
-          </Button>
-          <Button variant="danger" onClick={remove} disabled={deleting}>
-            {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Eliminar definitivamente
-          </Button>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm leading-relaxed text-amber-900">
+            <strong>Mejor opción:</strong> si el artículo aún existe físicamente,
+            márcalo como <strong>“Dado de baja”</strong>. Desaparecerá del inventario
+            activo pero conservarás todo su historial, y podrás reactivarlo luego.
+          </div>
+
+          <p className="text-sm leading-relaxed text-ink-soft">
+            Si realmente quieres borrar permanentemente{" "}
+            <strong className="text-ink">{item.name}</strong> y su historial, escribe su
+            código exactamente:
+          </p>
+
+          <div>
+            <input
+              value={confirmCode}
+              onChange={(e) => setConfirmCode(e.target.value.toUpperCase())}
+              placeholder={item.code}
+              autoComplete="off"
+              className={cn(inputCls, "text-center font-mono text-base font-bold tracking-[0.2em]")}
+            />
+            <p className="mt-1.5 text-center text-xs text-ink-faint">
+              Escribe <span className="font-mono font-semibold text-ink">{item.code}</span> para habilitar el borrado
+            </p>
+          </div>
+
+          {error && (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-medium text-red-700">
+              {error}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setDeleteOpen(false)} disabled={deleting}>
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => void remove()}
+              disabled={deleting || confirmCode.trim().toUpperCase() !== item.code}
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Eliminar definitivamente
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

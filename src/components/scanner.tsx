@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/secure-fetch";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -180,7 +182,7 @@ export function Scanner() {
     setPhase("looking");
     setLookupError(null);
     try {
-      const res = await fetch(`/api/scan/${encodeURIComponent(code)}`);
+      const res = await secureFetch(`/api/scan/${encodeURIComponent(code)}`);
       const data = await res.json();
       if (!res.ok) {
         setItem(null);
@@ -225,7 +227,7 @@ export function Scanner() {
     if (!item) return;
     setAdjusting(true);
     try {
-      const res = await fetch(`/api/items/${item.id}/adjust`, {
+      const res = await secureFetch(`/api/items/${item.id}/adjust`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ delta, note: "Ajuste rápido desde escáner" }),

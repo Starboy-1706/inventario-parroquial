@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { secureFetch } from "@/lib/secure-fetch";
+
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
@@ -50,22 +52,20 @@ function ZoneFormModal({
   const [error, setError] = useState<string | null>(null);
   const editing = Boolean(form.id);
 
-  // Sincroniza al abrir con nuevos datos iniciales
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (open !== prevOpen) {
-    setPrevOpen(open);
+  // Sincroniza el formulario al abrir, sin actualizar estado durante el render.
+  useEffect(() => {
     if (open) {
       setForm(initial.current);
       setError(null);
     }
-  }
+  }, [open, initial]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setPending(true);
     setError(null);
     try {
-      const res = await fetch(editing ? `/api/zones/${form.id}` : "/api/zones", {
+      const res = await secureFetch(editing ? `/api/zones/${form.id}` : "/api/zones", {
         method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -217,7 +217,7 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
     if (!toDelete) return;
     setDeleting(true);
     setDeleteError(null);
-    const res = await fetch(`/api/zones/${toDelete.id}`, { method: "DELETE" });
+    const res = await secureFetch(`/api/zones/${toDelete.id}`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
     setDeleting(false);
     if (!res.ok) {

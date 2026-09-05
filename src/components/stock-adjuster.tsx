@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/secure-fetch";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardCheck, Loader2, Minus, Plus } from "lucide-react";
@@ -29,7 +31,7 @@ export function StockAdjuster({
     setError(null);
     setFlash(null);
     try {
-      const res = await fetch(`/api/items/${itemId}/adjust`, {
+      const res = await secureFetch(`/api/items/${itemId}/adjust`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

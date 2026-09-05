@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/secure-fetch";
+
 import { useRef, useState, type ChangeEvent } from "react";
 import { Camera, ImagePlus, Loader2, RefreshCcw, Trash2 } from "lucide-react";
 import { cn, photoUrl } from "@/lib/utils";
@@ -83,7 +85,10 @@ export function PhotoUploader({
       try {
         blob = await compress(file);
       } catch {
-        blob = file; // si no se puede comprimir, subimos el original
+        setError(
+          "El navegador no pudo procesar este formato. Prueba con una foto JPEG, PNG o WebP.",
+        );
+        return;
       }
       if (blob.size > 4 * 1024 * 1024) {
         setError("La imagen supera 4 MB incluso tras comprimirla. Prueba con otra foto.");
@@ -92,7 +97,7 @@ export function PhotoUploader({
       setProgress("Subiendo…");
       const fd = new FormData();
       fd.append("file", new File([blob], "foto.jpg", { type: "image/jpeg" }));
-      const res = await fetch("/api/photos", { method: "POST", body: fd });
+      const res = await secureFetch("/api/photos", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? "No se pudo subir la fotografía.");

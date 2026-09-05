@@ -9,6 +9,27 @@ import { apiAuthGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+/** Dinero en formato español: "1.200,50" | "1200.5" | number → número limpio. */
+function parseMoneyValue(raw: unknown): { ok: boolean; value: number | null } {
+  if (raw === null || raw === undefined || raw === "") return { ok: true, value: null };
+  if (typeof raw === "number") {
+    return Number.isFinite(raw) && raw >= 0 && raw <= 100_000_000
+      ? { ok: true, value: raw }
+      : { ok: false, value: null };
+  }
+  if (typeof raw === "string") {
+    const clean = raw.trim().replace(/\s|€/g, "");
+    if (!clean) return { ok: true, value: null };
+    const num = clean.includes(",")
+      ? Number(clean.replace(/\./g, "").replace(",", "."))
+      : Number(clean);
+    return Number.isFinite(num) && num >= 0 && num <= 100_000_000
+      ? { ok: true, value: num }
+      : { ok: false, value: null };
+  }
+  return { ok: false, value: null };
+}
+
 export async function GET(request: NextRequest) {
   const denied = await apiAuthGuard();
   if (denied) return denied;
@@ -64,7 +85,10 @@ function parseItemBody(body: Record<string, unknown>) {
       ? body.category.trim()
       : (CATEGORIES[CATEGORIES.length - 1] as string);
 
-  const value = Number(body.estimatedValue);
+  const money = parseMoneyValue(body.estimatedValue);
+  if (!money.ok) {
+    return { error: "El valor estimado no es válido. Ejemplo: 1.200,50" } as const;
+  }
 
   return {
     data: {
@@ -82,12 +106,7 @@ function parseItemBody(body: Record<string, unknown>) {
         /^\d{4}-\d{2}-\d{2}$/.test(body.acquisitionDate)
           ? body.acquisitionDate
           : null,
-      estimatedValue:
-        Number.isFinite(value) && value >= 0 && value <= 100_000_000 &&
-        body.estimatedValue !== "" && body.estimatedValue !== null &&
-        body.estimatedValue !== undefined
-          ? value.toFixed(2)
-          : null,
+      estimatedValue: money.value !== null ? money.value.toFixed(2) : null,
       notes: notes || null,
     },
   } as const;

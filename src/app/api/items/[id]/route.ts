@@ -7,6 +7,27 @@ import { apiAuthGuard } from "@/lib/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
+/** Dinero en formato español: "1.200,50" | "1200.5" | number → número limpio. */
+function parseMoneyValue(raw: unknown): { ok: boolean; value: number | null } {
+  if (raw === null || raw === undefined || raw === "") return { ok: true, value: null };
+  if (typeof raw === "number") {
+    return Number.isFinite(raw) && raw >= 0 && raw <= 100_000_000
+      ? { ok: true, value: raw }
+      : { ok: false, value: null };
+  }
+  if (typeof raw === "string") {
+    const clean = raw.trim().replace(/\s|€/g, "");
+    if (!clean) return { ok: true, value: null };
+    const num = clean.includes(",")
+      ? Number(clean.replace(/\./g, "").replace(",", "."))
+      : Number(clean);
+    return Number.isFinite(num) && num >= 0 && num <= 100_000_000
+      ? { ok: true, value: num }
+      : { ok: false, value: null };
+  }
+  return { ok: false, value: null };
+}
+
 async function parseId(ctx: Ctx) {
   const { id } = await ctx.params;
   const n = Number(id);
@@ -129,18 +150,14 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
   }
 
   if (body.estimatedValue !== undefined) {
-    if (body.estimatedValue === "" || body.estimatedValue === null) {
-      updates.estimatedValue = null;
-    } else {
-      const value = Number(body.estimatedValue);
-      if (!Number.isFinite(value) || value < 0 || value > 100_000_000) {
-        return NextResponse.json(
-          { error: "El valor estimado no es válido." },
-          { status: 400 },
-        );
-      }
-      updates.estimatedValue = value.toFixed(2);
+    const money = parseMoneyValue(body.estimatedValue);
+    if (!money.ok) {
+      return NextResponse.json(
+        { error: "El valor estimado no es válido. Ejemplo: 1.200,50" },
+        { status: 400 },
+      );
     }
+    updates.estimatedValue = money.value !== null ? money.value.toFixed(2) : null;
   }
 
   if (
@@ -184,7 +201,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       type: body.status === "BAJA" ? "BAJA" : "ESTADO",
       quantity: 0,
       note: body.statusNote
-        ? String(body.statusNote)
+        ? String(body.statusNote).slice(0, 500)
         : `${current.status} → ${body.status}`,
     });
   }
