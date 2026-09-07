@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#211c12"/>
+  <!-- Arco gótico en latón -->
+  <path
+    d="M256 40C168 120 112 184 112 248v216h288V248c0-64-56-128-144-208Z"
+    fill="#a67c2d"
+    fill-opacity="0.2"
+    stroke="#a67c2d"
+    stroke-width="24"
+    stroke-linejoin="round"
+  />
+  <!-- Cruz -->
+  <path
+    d="M256 160v192M184 232h144"
+    stroke="#c9a24b"
+    stroke-width="30"
+    stroke-linecap="round"
+  />
+  <circle cx="256" cy="416" r="22" fill="#c9a24b" />
+</svg>

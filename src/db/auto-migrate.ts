@@ -138,6 +138,47 @@ export async function ensureDbSchema(): Promise<void> {
             updated_at timestamptz NOT NULL DEFAULT now()
           );
 
+          CREATE TABLE IF NOT EXISTS audit_sessions (
+            id serial PRIMARY KEY,
+            zone_id integer NOT NULL REFERENCES zones(id) ON DELETE CASCADE,
+            started_at timestamptz NOT NULL DEFAULT now(),
+            completed_at timestamptz,
+            status text NOT NULL DEFAULT 'EN_CURSO',
+            total_expected integer NOT NULL DEFAULT 0,
+            total_scanned integer NOT NULL DEFAULT 0,
+            total_discrepancies integer NOT NULL DEFAULT 0,
+            auditor_name text,
+            notes text,
+            created_at timestamptz NOT NULL DEFAULT now()
+          );
+
+          CREATE TABLE IF NOT EXISTS audit_session_items (
+            id serial PRIMARY KEY,
+            audit_session_id integer NOT NULL REFERENCES audit_sessions(id) ON DELETE CASCADE,
+            item_id integer REFERENCES items(id) ON DELETE SET NULL,
+            scanned_code text NOT NULL,
+            expected_quantity integer NOT NULL DEFAULT 0,
+            scanned_quantity integer NOT NULL DEFAULT 0,
+            status text NOT NULL DEFAULT 'CORRECTO',
+            scanned_at timestamptz NOT NULL DEFAULT now(),
+            notes text
+          );
+          CREATE INDEX IF NOT EXISTS audit_session_items_session_idx ON audit_session_items(audit_session_id);
+          CREATE INDEX IF NOT EXISTS audit_session_items_item_idx ON audit_session_items(item_id);
+
+          CREATE TABLE IF NOT EXISTS scan_logs (
+            id serial PRIMARY KEY,
+            code text NOT NULL,
+            matched_item_id integer REFERENCES items(id) ON DELETE SET NULL,
+            matched_zone_id integer REFERENCES zones(id) ON DELETE SET NULL,
+            action text NOT NULL DEFAULT 'CONSULTA',
+            actor text,
+            scanned_at timestamptz NOT NULL DEFAULT now()
+          );
+          CREATE INDEX IF NOT EXISTS scan_logs_code_idx ON scan_logs(code);
+          CREATE INDEX IF NOT EXISTS scan_logs_item_idx ON scan_logs(matched_item_id);
+          CREATE INDEX IF NOT EXISTS scan_logs_scanned_at_idx ON scan_logs(scanned_at);
+
           DO $$ BEGIN
             SELECT setval(
               'inventory_code_seq',

@@ -23,6 +23,16 @@ export const metadata: Metadata = {
     template: "%s · Parroquia Santa Bárbara",
   },
   description: "Gestión privada del inventario de la Parroquia Santa Bárbara.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/icon.svg",
+    apple: "/icons/icon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Santa Bárbara",
+  },
   robots: { index: false, follow: false },
 };
 

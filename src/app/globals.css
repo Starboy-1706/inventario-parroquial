@@ -57,6 +57,37 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ---------- Modo Oscuro Eclesial / Basílica Nocturna ---------- */
+html.dark,
+body.dark {
+  --color-paper: #16130d;
+  --color-paper-deep: #110f0a;
+  --color-cream: #1d1912;
+  --color-ink: #f6f0e3;
+  --color-ink-soft: #b9ad96;
+  --color-ink-faint: #786f5f;
+  --color-line: #332b1f;
+  --color-line-soft: #262017;
+  --color-gold: #c9a24b;
+  --color-gold-deep: #e6be6a;
+  --color-gold-soft: #deb969;
+  background-color: #16130d;
+  color: #f6f0e3;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #1f1b13 !important;
+  color: #f6f0e3 !important;
+  border-color: #383023 !important;
+}
+
+html.dark body::before {
+  mix-blend-mode: screen;
+  opacity: 0.04;
+}
+
 /* Grano de papel sutil */
 body::before {
   content: "";

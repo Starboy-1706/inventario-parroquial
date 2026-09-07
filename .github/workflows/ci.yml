@@ -1,0 +1,38 @@
+name: CI - Integridad de Inventario Parroquial
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validar Tipos, Lint y Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificación de TypeScript
+        run: npm exec tsc -- --noEmit
+
+      - name: Verificación de ESLint
+        run: npm run lint
+
+      - name: Compilación de producción (Next.js Build)
+        env:
+          DATABASE_URL: "postgresql://postgres:dummy@localhost:5432/dummy"
+          ACCESS_PASSWORD: "Clave-De-Prueba-CI-2026"
+          SESSION_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef"
+        run: npm run build

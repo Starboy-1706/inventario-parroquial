@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock3, KeyRound, Loader2, LogOut, RotateCcw, ShieldCheck } from "lucide-react";
+import { Clock3, Download, KeyRound, Loader2, LogOut, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui";
 
 export function SecurityPanel({
@@ -64,6 +64,37 @@ export function SecurityPanel({
           <p className="mt-1 text-xs leading-relaxed text-ink-soft">
             Cambia <code className="font-mono text-[0.68rem]">SESSION_SECRET</code> en Vercel por otro valor aleatorio de 32 caracteres o más y redespliega.
           </p>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+        <div className="flex items-center gap-2">
+          <Download className="h-4.5 w-4.5 text-gold-deep" />
+          <h2 className="font-display text-xl font-semibold text-ink">
+            Copia de seguridad completa
+          </h2>
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+          Descarga un archivo JSON estructurado con todos los artículos, estancias,
+          categorías, movimientos históricos, préstamos y fichas de mantenimiento.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <a
+            href="/api/backup"
+            download
+            className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-xs font-bold text-cream shadow transition hover:bg-basilica-deep"
+          >
+            <Download className="h-3.5 w-3.5 text-gold-soft" />
+            Descargar respaldo completo (JSON)
+          </a>
+          <a
+            href="/api/export"
+            download
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-xs font-bold text-ink shadow transition hover:border-ink/30"
+          >
+            <Download className="h-3.5 w-3.5 text-gold-deep" />
+            Descargar tabla para Excel (CSV)
+          </a>
         </div>
       </section>
 

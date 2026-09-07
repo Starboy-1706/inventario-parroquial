@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { ensureDbSchema } from "@/db/auto-migrate";
-import { appSettings, items, movements, zones } from "@/db/schema";
+import { appSettings, items, loans, movements, zones } from "@/db/schema";
 import {
   and,
   asc,
@@ -9,6 +9,7 @@ import {
   ilike,
   isNotNull,
   isNull,
+  lt,
   ne,
   or,
   sql,
@@ -156,6 +157,11 @@ export async function getDashboardStats() {
 
   const [zoneCount] = await db.select({ count: sql<number>`count(*)::int` }).from(zones);
 
+  const [overdueLoansCount] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(loans)
+    .where(and(isNull(loans.returnedAt), lt(loans.dueAt, new Date())));
+
   const lowStock = await db
     .select({ item: items, zoneName: zones.name, zoneColor: zones.color })
     .from(items)
@@ -193,6 +199,7 @@ export async function getDashboardStats() {
     maintenance: tot.maintenance,
     totalValue: Number(tot.totalValue),
     zoneCount: zoneCount.count,
+    overdueLoans: overdueLoansCount?.count ?? 0,
     lowStock: lowStock.map((r) => ({ ...r.item, zoneName: r.zoneName, zoneColor: r.zoneColor })),
     recentMovements: recentMovements.map((r) => ({
       ...r.movement,

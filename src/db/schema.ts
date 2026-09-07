@@ -244,6 +244,57 @@ export const authLoginAttempts = pgTable("auth_login_attempts", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const auditSessions = pgTable("audit_sessions", {
+  id: serial("id").primaryKey(),
+  zoneId: integer("zone_id").notNull().references(() => zones.id, { onDelete: "cascade" }),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  status: text("status").notNull().default("EN_CURSO"), // EN_CURSO | COMPLETADO | CANCELADO
+  totalExpected: integer("total_expected").notNull().default(0),
+  totalScanned: integer("total_scanned").notNull().default(0),
+  totalDiscrepancies: integer("total_discrepancies").notNull().default(0),
+  auditorName: text("auditor_name"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const auditSessionItems = pgTable(
+  "audit_session_items",
+  {
+    id: serial("id").primaryKey(),
+    auditSessionId: integer("audit_session_id").notNull().references(() => auditSessions.id, { onDelete: "cascade" }),
+    itemId: integer("item_id").references(() => items.id, { onDelete: "set null" }),
+    scannedCode: text("scanned_code").notNull(),
+    expectedQuantity: integer("expected_quantity").notNull().default(0),
+    scannedQuantity: integer("scanned_quantity").notNull().default(0),
+    status: text("status").notNull().default("CORRECTO"), // CORRECTO | FALTANTE | SOBRANTE | DISCREPANCIA_CANTIDAD | FUERA_DE_ZONA | DESCONOCIDO
+    scannedAt: timestamp("scanned_at", { withTimezone: true }).notNull().defaultNow(),
+    notes: text("notes"),
+  },
+  (t) => [
+    index("audit_session_items_session_idx").on(t.auditSessionId),
+    index("audit_session_items_item_idx").on(t.itemId),
+  ],
+);
+
+export const scanLogs = pgTable(
+  "scan_logs",
+  {
+    id: serial("id").primaryKey(),
+    code: text("code").notNull(),
+    matchedItemId: integer("matched_item_id").references(() => items.id, { onDelete: "set null" }),
+    matchedZoneId: integer("matched_zone_id").references(() => zones.id, { onDelete: "set null" }),
+    action: text("action").notNull().default("CONSULTA"), // CONSULTA | AJUSTE | AUDITORIA
+    actor: text("actor"),
+    scannedAt: timestamp("scanned_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("scan_logs_code_idx").on(t.code),
+    index("scan_logs_item_idx").on(t.matchedItemId),
+    index("scan_logs_scanned_at_idx").on(t.scannedAt),
+  ],
+);
+
 export type Zone = typeof zones.$inferSelect;
 export type Item = typeof items.$inferSelect;
 export type Movement = typeof movements.$inferSelect;
@@ -255,3 +306,6 @@ export type MaintenanceRecord = typeof maintenanceRecords.$inferSelect;
 export type AppUser = typeof appUsers.$inferSelect;
 export type AppSetting = typeof appSettings.$inferSelect;
 export type AuthLoginAttempt = typeof authLoginAttempts.$inferSelect;
+export type AuditSession = typeof auditSessions.$inferSelect;
+export type AuditSessionItem = typeof auditSessionItems.$inferSelect;
+export type ScanLog = typeof scanLogs.$inferSelect;

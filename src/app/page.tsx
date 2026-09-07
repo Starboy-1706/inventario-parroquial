@@ -4,12 +4,18 @@ import {
   ArrowRight,
   ArrowRightLeft,
   ArrowUpRight,
+  BarChart3,
   Boxes,
+  ClipboardCheck,
   ClipboardList,
   Coins,
+  FileText,
+  Handshake,
+  HelpCircle,
   Landmark,
   MapPinned,
   PackagePlus,
+  Play,
   PlusCircle,
   RefreshCcw,
   ScanLine,
@@ -27,7 +33,7 @@ import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
-  return authPageMetadata("Panel");
+  return authPageMetadata("Panel general");
 }
 
 const MOVEMENT_ICONS: Partial<Record<MovementType, LucideIcon>> = {
@@ -69,28 +75,31 @@ export default async function DashboardPage() {
       label: "Artículos registrados",
       value: stats.totalItems,
       icon: Boxes,
-      note: `${stats.totalUnits} unidades en total`,
+      note: `${stats.totalUnits} unidades físicas`,
     },
     {
-      label: "Zonas de la parroquia",
+      label: "Estancias / Zonas",
       value: stats.zoneCount,
       icon: Landmark,
-      note: "Ubicaciones activas",
+      note: "Ubicaciones catalogadas",
     },
     {
-      label: "Prestados / en revisión",
+      label: "Prestados / En revisión",
       value: stats.lent + stats.maintenance,
       icon: RefreshCcw,
       note: `${stats.lent} prestados · ${stats.maintenance} mantenimiento`,
     },
     {
-      label: "Valor estimado",
+      label: "Valoración estimada",
       value: formatMoney(stats.totalValue),
       icon: Coins,
-      note: "Tasación del inventario",
+      note: "Tasación patrimonial",
       small: true,
     },
   ];
+
+  // Cálculo para gráfico SVG de distribución por estancia
+  const maxZoneCount = Math.max(...zones.map((z) => z.itemCount), 1);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12">
@@ -104,13 +113,15 @@ export default async function DashboardPage() {
           <em className="font-light italic text-gold-deep">bien ordenada.</em>
         </h1>
         <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink-soft">
-          Inventario parroquial por zonas con códigos escaneables, control de
-          existencias y lectura por cámara en tiempo real.
+          Inventario parroquial con códigos permanentes, modo recuento por estancia,
+          control de préstamos y lectura QR en tiempo real.
         </p>
+
+        {/* Botones de acción rápida */}
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Link
             href="/escaner"
-            className="group inline-flex items-center gap-2.5 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream shadow-lift transition-all hover:bg-basilica-deep"
+            className="group inline-flex items-center gap-2.5 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream shadow-lift transition hover:bg-basilica-deep"
           >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-60" />
@@ -120,17 +131,83 @@ export default async function DashboardPage() {
             <ScanLine className="h-4 w-4 text-gold-soft transition-transform group-hover:scale-110" />
           </Link>
           <Link
-            href="/inventario"
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-cream px-5 py-3 text-sm font-semibold text-ink transition hover:border-ink/25"
+            href="/recuento"
+            className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/15 px-5 py-3 text-sm font-semibold text-gold-deep transition hover:bg-gold/25"
           >
-            Ver inventario completo
-            <ArrowRight className="h-4 w-4" />
+            <Play className="h-4 w-4 fill-gold text-gold-deep" />
+            Modo Recuento
+          </Link>
+          <Link
+            href="/inventario/nuevo"
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-cream px-4 py-3 text-sm font-semibold text-ink transition hover:border-ink/25"
+          >
+            <PackagePlus className="h-4 w-4" />
+            Nuevo artículo
+          </Link>
+          <Link
+            href="/ayuda"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-3 text-xs font-semibold text-ink-soft hover:text-ink"
+            title="Manual y guía de ayuda para el equipo"
+          >
+            <HelpCircle className="h-4 w-4 text-gold-deep" />
+            Guía de uso
           </Link>
         </div>
       </header>
 
-      {/* ---------- Estadísticas ---------- */}
-      <section className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {/* ---------- Banner de alertas operativas ---------- */}
+      {(stats.overdueLoans > 0 || stats.lowStock.length > 0) && (
+        <section className="mt-8 animate-fade-up">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {stats.overdueLoans > 0 && (
+              <Link
+                href="/informes"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-red-300 bg-red-50/80 p-4 shadow-sm transition hover:bg-red-50"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+                    <Handshake className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-red-800">
+                      {stats.overdueLoans} préstamo(s) vencido(s)
+                    </p>
+                    <p className="text-xs text-red-900/80">
+                      Hay bienes cuya fecha de devolución ya ha pasado.
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-red-700 shrink-0" />
+              </Link>
+            )}
+
+            {stats.lowStock.length > 0 && (
+              <Link
+                href="/inventario?tipo=CONTABLE"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50/80 p-4 shadow-sm transition hover:bg-amber-50"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                    <TriangleAlert className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                      {stats.lowStock.length} alerta(s) de stock bajo
+                    </p>
+                    <p className="text-xs text-amber-950/80">
+                      Hostias, velas o consumibles por debajo del mínimo.
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 text-amber-800 shrink-0" />
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- Estadísticas clave ---------- */}
+      <section className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {statCards.map((s, i) => (
           <div
             key={s.label}
@@ -153,8 +230,60 @@ export default async function DashboardPage() {
         ))}
       </section>
 
+      {/* ---------- Gráfico visual SVG de distribución ---------- */}
+      {zones.length > 0 && stats.totalItems > 0 && (
+        <section className="mt-10 animate-fade-up rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-gold-deep" />
+              <h2 className="font-display text-xl font-semibold text-ink">
+                Distribución de bienes por estancia
+              </h2>
+            </div>
+            <Link
+              href="/informes"
+              className="text-xs font-semibold uppercase tracking-wider text-gold-deep hover:text-gold"
+            >
+              Ver desglose completo →
+            </Link>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {zones.map((z) => {
+              const widthPct = Math.max(8, Math.round((z.itemCount / maxZoneCount) * 100));
+              return (
+                <div key={z.id} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2 font-semibold text-ink">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: z.color }}
+                      />
+                      {z.name}
+                    </span>
+                    <span className="font-mono text-ink-soft">
+                      {z.itemCount} arts. ({z.unitCount} uds.)
+                    </span>
+                  </div>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-paper-deep">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${widthPct}%`,
+                        backgroundColor: z.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- Zonas + Actividad ---------- */}
       <div className="mt-12 grid gap-10 lg:grid-cols-[1.5fr_1fr]">
-        {/* ---------- Zonas ---------- */}
+        {/* Zonas */}
         <section className="animate-fade-up" style={{ animationDelay: "260ms" }}>
           <div className="flex items-end justify-between">
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ink">
@@ -236,7 +365,7 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        {/* ---------- Alertas + actividad ---------- */}
+        {/* Alertas + Últimos movimientos */}
         <div className="space-y-10">
           <section className="animate-fade-up" style={{ animationDelay: "340ms" }}>
             <div className="flex items-center gap-2">
@@ -345,11 +474,11 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 border-t border-white/10 pt-5 text-[0.7rem] text-cream/40">
-          <span>Códigos únicos por artículo</span>
-          <span>Piezas únicas vs. acumulables</span>
-          <span>Registro histórico de movimientos</span>
+          <span>Códigos PSB permanentes</span>
+          <span>Modo recuento por estancia</span>
+          <span>Préstamos y mantenimiento</span>
           <span className="flex items-center gap-1.5">
-            <StatusBadge status="DISPONIBLE" /> estados claros
+            <StatusBadge status="DISPONIBLE" /> estados auditados
           </span>
         </div>
       </footer>
