@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { ensureDbSchema } from "@/db/auto-migrate";
 import { appSettings, items, movements, zones } from "@/db/schema";
 import {
   and,
@@ -28,6 +29,7 @@ export type ZoneWithCount = {
 };
 
 export async function getZonesWithCounts(): Promise<ZoneWithCount[]> {
+  await ensureDbSchema();
   return db
     .select({
       id: zones.id,
@@ -85,6 +87,7 @@ function buildItemConditions(filters: ItemFilters) {
 }
 
 export async function getItemsPage(filters: ItemFilters) {
+  await ensureDbSchema();
   const pageSize = Math.min(100, Math.max(10, filters.pageSize ?? 25));
   const where = buildItemConditions(filters);
   const [countRow] = await db
@@ -123,6 +126,7 @@ export async function getItems(filters: ItemFilters): Promise<ItemWithZone[]> {
 }
 
 export async function getParishSettings() {
+  await ensureDbSchema();
   const [settings] = await db.select().from(appSettings).where(eq(appSettings.id, 1));
   return (
     settings ?? {
@@ -137,6 +141,7 @@ export async function getParishSettings() {
 }
 
 export async function getDashboardStats() {
+  await ensureDbSchema();
   const active = and(isNull(items.deletedAt), ne(items.status, "BAJA"));
   const [tot] = await db
     .select({
