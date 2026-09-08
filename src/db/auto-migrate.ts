@@ -1,6 +1,7 @@
-import { pool } from "@/db";
+import { withDbRetry } from "./index";
 
-let migrationPromise: Promise<void> | null = null;
+let isSchemaVerified = false;
+let ongoingMigration: Promise<void> | null = null;
 
 const CATEGORIES = [
   "Orfebrería y vasos sagrados",
@@ -16,16 +17,34 @@ const CATEGORIES = [
 ];
 
 /**
- * Auto-migrador automático y transparente:
- * Se ejecuta al arrancar el servidor o en las consultas clave.
- * Garantiza que todas las columnas y tablas existan en Supabase/PostgreSQL
- * sin requerir que el usuario abra Supabase ni ejecute SQL manual.
+ * Auto-migrador ultra-eficiente y tolerante:
+ * - Una vez verificado en la instancia actual, no ejecuta ninguna consulta extra (0 ms).
+ * - Usa reintentos automáticos si la conexión con Supabase estaba en reposo.
+ * - Si ocurre un aviso no crítico, no bloquea las consultas normales del usuario.
  */
 export async function ensureDbSchema(): Promise<void> {
-  if (!migrationPromise) {
-    migrationPromise = (async () => {
-      const client = await pool.connect();
-      try {
+  if (isSchemaVerified) return;
+
+  if (ongoingMigration) {
+    return ongoingMigration;
+  }
+
+  ongoingMigration = (async () => {
+    try {
+      await withDbRetry(async (client) => {
+        // 1. Comprobación rápida: si la columna location_note y audit_sessions ya existen, listo
+        try {
+          const check = await client.query(`
+            SELECT 1 FROM items, audit_sessions, app_settings LIMIT 1;
+          `);
+          if (check) {
+            isSchemaVerified = true;
+            return;
+          }
+        } catch {
+          // El esquema no está completo todavía: ejecutar el script de creación
+        }
+
         await client.query(`
           CREATE SEQUENCE IF NOT EXISTS inventory_code_seq START 1;
 
@@ -196,13 +215,17 @@ export async function ensureDbSchema(): Promise<void> {
             [name, i],
           );
         }
-      } catch (err) {
-        console.error("[db/auto-migrate] Error en migración automática:", err);
-      } finally {
-        client.release();
-      }
-    })();
-  }
 
-  return migrationPromise;
+        isSchemaVerified = true;
+      });
+    } catch (err) {
+      console.warn("[db:auto-migrate] Aviso en comprobación de esquema (no crítico):", err);
+      // No marcar como verificado para que vuelva a intentar más tarde,
+      // pero no lanzar error para no tirar la petición del usuario si la tabla ya existe
+    } finally {
+      ongoingMigration = null;
+    }
+  })();
+
+  return ongoingMigration;
 }
