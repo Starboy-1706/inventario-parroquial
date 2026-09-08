@@ -122,14 +122,14 @@ export default async function InformeAnualPage() {
       </div>
 
       {/* ---------- Documento Formal A4 ---------- */}
-      <div className="mx-auto max-w-4xl px-4 pt-8 print:p-0">
-        <article className="rounded-3xl border border-line bg-white p-8 shadow-card sm:p-12 print:border-0 print:p-0 print:shadow-none font-serif text-ink">
+      <div className="mx-auto max-w-4xl px-3 pt-5 sm:px-4 sm:pt-8 print:p-0">
+        <article className="rounded-2xl border border-line bg-white p-4 shadow-card sm:rounded-3xl sm:p-12 print:border-0 print:p-0 print:shadow-none font-serif text-ink">
           {/* Encabezado eclesial */}
-          <header className="border-b-2 border-ink pb-6 text-center">
-            <p className="text-xs uppercase tracking-[0.25em] text-stone-600">
+          <header className="border-b-2 border-ink pb-4 pt-2 text-center sm:pb-6">
+            <p className="text-[0.6rem] uppercase tracking-[0.2em] text-stone-600 sm:text-xs sm:tracking-[0.25em]">
               Diócesis · Inventario General de Bienes y Enseres
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            <h1 className="mt-1.5 text-xl font-bold tracking-tight text-ink sm:mt-2 sm:text-4xl">
               {parishName}
             </h1>
             {settings?.address && (
@@ -145,25 +145,25 @@ export default async function InformeAnualPage() {
             <h2 className="text-sm font-bold uppercase tracking-wider text-ink border-b border-stone-300 pb-1">
               1. Resumen General del Patrimonio
             </h2>
-            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-              <div className="border border-stone-300 p-3 rounded">
-                <span className="block text-2xl font-bold">{totals.totalItems}</span>
-                <span className="block text-xs uppercase tracking-wider text-stone-600">
-                  Artículos catalogados
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center sm:mt-4 sm:gap-4">
+              <div className="border border-stone-300 p-2 rounded sm:p-3">
+                <span className="block text-lg font-bold sm:text-2xl">{totals.totalItems}</span>
+                <span className="block text-[0.5rem] uppercase tracking-wide text-stone-600 sm:text-xs sm:tracking-wider">
+                  Artículos
                 </span>
               </div>
-              <div className="border border-stone-300 p-3 rounded">
-                <span className="block text-2xl font-bold">{totals.totalUnits}</span>
-                <span className="block text-xs uppercase tracking-wider text-stone-600">
-                  Unidades físicas
+              <div className="border border-stone-300 p-2 rounded sm:p-3">
+                <span className="block text-lg font-bold sm:text-2xl">{totals.totalUnits}</span>
+                <span className="block text-[0.5rem] uppercase tracking-wide text-stone-600 sm:text-xs sm:tracking-wider">
+                  Unidades
                 </span>
               </div>
-              <div className="border border-stone-300 p-3 rounded bg-stone-50">
-                <span className="block text-2xl font-bold text-gold-deep">
+              <div className="border border-stone-300 p-2 rounded bg-stone-50 sm:p-3">
+                <span className="block text-lg font-bold text-gold-deep sm:text-2xl">
                   {formatMoney(totals.totalValue)}
                 </span>
-                <span className="block text-xs uppercase tracking-wider text-stone-600">
-                  Valoración total estimada
+                <span className="block text-[0.5rem] uppercase tracking-wide text-stone-600 sm:text-xs sm:tracking-wider">
+                  Valoración
                 </span>
               </div>
             </div>

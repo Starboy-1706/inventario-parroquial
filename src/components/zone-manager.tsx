@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   Loader2,
   PencilLine,
+  QrCode,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -335,13 +336,25 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                         </span>
                       )}
                     </p>
-                    <Link
-                      href={`/inventario?zona=${z.id}`}
-                      className="inline-flex items-center gap-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-gold-deep transition hover:text-gold"
-                    >
-                      Ver
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </Link>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <Link
+                        href={`/inventario?zona=${z.id}`}
+                        className="inline-flex items-center gap-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-gold-deep transition hover:text-gold"
+                      >
+                        Ver
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Link>
+                      {z.itemCount > 0 && (
+                        <Link
+                          href={`/zonas/${z.id}/etiquetas`}
+                          className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line bg-white px-2.5 text-[0.62rem] font-bold text-ink transition hover:border-gold/40 hover:text-gold-deep"
+                          title={`Imprimir las ${z.itemCount} etiquetas QR de esta zona`}
+                        >
+                          <QrCode className="h-3 w-3 text-gold-deep" />
+                          Etiquetas QR
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               </li>

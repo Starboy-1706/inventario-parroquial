@@ -229,7 +229,7 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
             <p className="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-ink-soft">
               Progreso del recuento
             </p>
-            <p className="mt-1 font-display text-3xl font-semibold text-ink">
+            <p className="mt-1 font-display text-2xl font-semibold text-ink sm:text-3xl">
               {verifiedCount} de {totalExpected}{" "}
               <span className="font-sans text-xs font-normal text-ink-soft">verificados</span>
             </p>
@@ -313,9 +313,9 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
               e.preventDefault();
               void handleScan(codeScanInput, qtyInput);
             }}
-            className="mt-4 flex flex-wrap items-end gap-2.5"
+            className="mt-4 grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_6rem_auto] sm:items-end"
           >
-            <div className="min-w-44 flex-1">
+            <div className="min-w-0">
               <label className="block">
                 <span className="mb-1 block text-[0.65rem] font-semibold uppercase tracking-wider text-ink-soft">
                   Código (lector bluetooth o a mano)
@@ -497,7 +497,7 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
                   {isOngoing && isMissing && (
                     <button
                       onClick={() => void handleScan(item.scannedCode, item.expectedQuantity)}
-                      className="cursor-pointer rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold text-ink hover:bg-emerald-50 hover:text-emerald-700"
+                      className="min-h-9 cursor-pointer rounded-full border border-line bg-white px-3 py-1 text-xs font-semibold text-ink transition active:scale-95 hover:bg-emerald-50 hover:text-emerald-700"
                     >
                       Verificar 1 ud.
                     </button>

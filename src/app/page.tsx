@@ -5,6 +5,7 @@ import {
   ArrowRightLeft,
   ArrowUpRight,
   BarChart3,
+  QrCode,
   Boxes,
   ClipboardCheck,
   ClipboardList,
@@ -348,14 +349,21 @@ export default async function DashboardPage() {
                       <p className="mt-0.5 line-clamp-1 text-xs text-ink-soft">
                         {z.description ?? "—"}
                       </p>
-                      <p className="mt-3 flex items-baseline gap-1.5 text-xs text-ink-soft">
-                        <span className="font-display text-xl font-semibold text-ink">
-                          {z.itemCount}
-                        </span>
-                        artículos
-                        <span className="text-ink-faint">·</span>
-                        <span className="font-semibold text-ink">{z.unitCount}</span> uds.
-                      </p>
+                      <div className="mt-3 flex items-end justify-between gap-2">
+                        <p className="text-xs text-ink-soft">
+                          <span className="font-display text-xl font-semibold text-ink">
+                            {z.itemCount}
+                          </span>{" "}
+                          artículos
+                          <span className="text-ink-faint">·</span>{" "}
+                          <span className="font-semibold text-ink">{z.unitCount}</span> uds.
+                        </p>
+                        {z.itemCount > 0 && (
+                          <span className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line bg-white px-2 text-[0.6rem] font-bold text-ink transition hover:border-gold/40">
+                            <QrCode className="h-3 w-3 text-gold-deep" />
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </Link>
                 );
