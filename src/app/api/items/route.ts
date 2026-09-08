@@ -84,6 +84,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const created = await db.transaction(async (tx) => {
+      // Auto-corrección de secuencia: evita colisiones cuando hubo borrados
+      // o transacciones abortadas (las secuencias no revierten las asignaciones).
+      await tx.execute(sql`
+        SELECT setval(
+          'inventory_code_seq',
+          GREATEST(
+            (SELECT COALESCE(MAX(inventory_number), 0) FROM items),
+            (SELECT last_value FROM inventory_code_seq),
+            1
+          )
+        )
+      `);
       const seq = await tx.execute(sql`select nextval('inventory_code_seq')::int as n`);
       const inventoryNumber = Number(seq.rows[0]?.n);
       if (!Number.isInteger(inventoryNumber)) throw new Error("SEQUENCE_ERROR");
@@ -137,11 +149,18 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (pgCode(error, "23505")) {
       return NextResponse.json(
-        { error: "El código de barras comercial ya pertenece a otro artículo." },
+        {
+          error:
+            "El código de barras comercial o un identificador interno ya existía. " +
+            "Inténtalo de nuevo: si se trató de una colisión de numeración, ya quedó corregida.",
+        },
         { status: 409 },
       );
     }
     console.error("[items/create]", error);
-    return NextResponse.json({ error: "No se pudo completar el alta." }, { status: 500 });
+    return NextResponse.json(
+      { error: "No se pudo completar el alta. Inténtalo de nuevo en unos segundos." },
+      { status: 500 },
+    );
   }
 }

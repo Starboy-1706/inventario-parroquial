@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
+import { ensureDbSchema } from "@/db/auto-migrate";
 import { authLoginAttempts } from "@/db/schema";
 import {
   getAuthConfig,
@@ -24,11 +25,15 @@ export async function isAuthenticated(): Promise<boolean> {
 /** Defensa final junto a los datos: no depende solamente de proxy.ts. */
 export async function requireAuthenticated(): Promise<void> {
   if (!(await isAuthenticated())) notFound();
+  // Auto-reparación del esquema en TODA ruta protegida: antes de consultar
+  // la base, garantiza que existen todas las tablas y columnas nuevas.
+  await ensureDbSchema();
 }
 
 /** Defensa para Route Handlers y mutaciones. */
 export async function apiAuthGuard(): Promise<NextResponse | null> {
   if (await isAuthenticated()) return null;
+  await ensureDbSchema();
   return NextResponse.json(
     { error: "Sesión no válida o caducada." },
     {
