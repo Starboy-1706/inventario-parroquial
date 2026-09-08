@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   BarChart3,
   Boxes,
   HelpCircle,
   LayoutDashboard,
   MapPinned,
+  Menu,
   Play,
   ScanLine,
   Settings,
   ShieldCheck,
+  X,
   type LucideIcon,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { LogoMark, LogoWord } from "@/components/logo";
 import { DarkModeToggle } from "@/components/dark-mode-toggle";
@@ -49,12 +52,15 @@ function isActive(pathname: string, href: string) {
 
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Cerrar el menú al cambiar de ruta: se hace sin setState en efecto
+  // porque los Link dentro del drawer ya cierran el menú al hacer clic.
   if (pathname === "/acceso") return <>{children}</>;
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[17.5rem_1fr]">
-      {/* ---------- Barra lateral (escritorio) ---------- */}
+      {/* =================== ESCRITORIO: Barra lateral =================== */}
       <aside className="no-print sticky top-0 hidden h-dvh flex-col justify-between overflow-y-auto border-r border-white/5 bg-ink px-6 py-8 lg:flex">
         <div>
           <div className="flex items-center justify-between">
@@ -78,9 +84,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     href={href}
                     className={cn(
                       "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300",
-                      active
-                        ? "bg-white/8 text-cream"
-                        : "text-cream/55 hover:bg-white/5 hover:text-cream",
+                      active ? "bg-white/8 text-cream" : "text-cream/55 hover:bg-white/5 hover:text-cream",
                     )}
                   >
                     <span
@@ -121,9 +125,7 @@ export function Shell({ children }: { children: ReactNode }) {
                     href={href}
                     className={cn(
                       "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300",
-                      active
-                        ? "bg-white/8 text-cream"
-                        : "text-cream/55 hover:bg-white/5 hover:text-cream",
+                      active ? "bg-white/8 text-cream" : "text-cream/55 hover:bg-white/5 hover:text-cream",
                     )}
                   >
                     <span
@@ -152,20 +154,21 @@ export function Shell({ children }: { children: ReactNode }) {
             Parroquia Santa Bárbara
           </p>
           <p className="mt-1 font-display text-xs italic leading-snug text-cream/70">
-            “Bien ordenadas están las cosas de Dios.”
+            &ldquo;Bien ordenadas están las cosas de Dios.&rdquo;
           </p>
         </div>
       </aside>
 
-      {/* ---------- Cabecera móvil ---------- */}
-      <header className="no-print sticky top-0 z-40 flex items-center justify-between border-b border-line bg-ink px-4 py-3 lg:hidden">
+      {/* =================== MÓVIL: Cabecera =================== */}
+      <header
+        className="no-print sticky top-0 z-40 flex items-center justify-between border-b border-white/10 bg-ink px-4 py-3 lg:hidden"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
         <Link href="/" className="flex items-center gap-2">
           <LogoMark className="h-7 w-7" />
-          <span className="font-display text-sm font-bold text-cream">
-            Santa Bárbara
-          </span>
+          <span className="font-display text-sm font-bold text-cream">Santa Bárbara</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <DarkModeToggle />
           <Link
             href="/escaner"
@@ -174,32 +177,128 @@ export function Shell({ children }: { children: ReactNode }) {
             <ScanLine className="h-3.5 w-3.5" strokeWidth={2.2} />
             Escanear
           </Link>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="cursor-pointer rounded-full p-2 text-cream/70 transition hover:bg-white/10 hover:text-cream"
+            aria-label="Abrir menú"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
         </div>
       </header>
 
-      {/* ---------- Contenido ---------- */}
-      <main className="min-w-0 pb-28 lg:pb-0">{children}</main>
+      {/* =================== MÓVIL: Menú deslizante =================== */}
+      <AnimatePresence>
+        {drawerOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal>
+          <div
+            className="absolute inset-0 bg-ink/70 backdrop-blur-sm"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <motion.nav
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            className="absolute inset-y-0 right-0 flex w-[280px] flex-col overflow-y-auto border-l border-white/10 bg-ink px-5 pb-[env(safe-area-inset-bottom)] pt-[max(1.5rem,env(safe-area-inset-top))]"
+          >
+            <div className="flex items-center justify-between">
+              <Link href="/" className="flex items-center gap-2" onClick={() => setDrawerOpen(false)}>
+                <LogoMark className="h-8 w-8" />
+                <LogoWord />
+              </Link>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="cursor-pointer rounded-full p-2 text-cream/60 transition hover:bg-white/10"
+                aria-label="Cerrar menú"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-      {/* ---------- Barra de navegación inferior (móvil) ---------- */}
-      <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-5 px-2">
+            <p className="mt-8 px-2 text-[0.6rem] font-semibold uppercase tracking-[0.26em] text-cream/35">
+              Inventario Activo
+            </p>
+            <nav className="mt-2 space-y-0.5">
+              {NAV_MAIN.map(({ href, label, icon: Icon, badge }) => {
+                const active = isActive(pathname, href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition",
+                      active ? "bg-gold/15 text-gold-soft" : "text-cream/60 hover:bg-white/5 hover:text-cream",
+                    )}
+                  >
+                    <Icon className="h-[1.1rem] w-[1.1rem]" strokeWidth={1.8} />
+                    <span className="flex-1">{label}</span>
+                    {badge && (
+                      <span className="rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[0.5rem] font-bold uppercase text-gold-soft">
+                        {badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <p className="mt-6 border-t border-white/10 px-2 pt-4 text-[0.6rem] font-semibold uppercase tracking-[0.26em] text-cream/35">
+              Gestión Parroquial
+            </p>
+            <nav className="mt-2 space-y-0.5">
+              {NAV_MANAGEMENT.map(({ href, label, icon: Icon }) => {
+                const active = isActive(pathname, href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition",
+                      active ? "bg-gold/15 text-gold-soft" : "text-cream/60 hover:bg-white/5 hover:text-cream",
+                    )}
+                  >
+                    <Icon className="h-[1.1rem] w-[1.1rem]" strokeWidth={1.8} />
+                    <span className="flex-1">{label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <p className="mt-auto pb-4 pt-8 text-center text-[0.6rem] text-cream/30">
+              Parroquia Santa Bárbara
+            </p>
+          </motion.nav>
+        </div>
+        )}
+      </AnimatePresence>
+
+      {/* =================== Contenido =================== */}
+      <main className="min-w-0 pb-24 lg:pb-0">{children}</main>
+
+      {/* =================== MÓVIL: Barra inferior =================== */}
+      <nav
+        className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/97 backdrop-blur-lg lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="mx-auto grid max-w-md grid-cols-5 px-1">
           {NAV_MOBILE.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
               <Link
                 key={href}
                 href={href}
-                className="flex flex-col items-center gap-1 py-2"
+                className="flex flex-col items-center gap-0.5 py-2"
               >
                 <span
                   className={cn(
-                    "flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-300",
-                    active ? "bg-gold/25" : "bg-transparent",
+                    "flex h-8 w-14 items-center justify-center rounded-full transition-all duration-300",
+                    active ? "scale-105 bg-gold/25" : "bg-transparent",
                   )}
                 >
                   <Icon
                     className={cn(
-                      "h-[1.1rem] w-[1.1rem]",
+                      "h-[1.15rem] w-[1.15rem] transition-colors",
                       active ? "text-gold-soft" : "text-cream/40",
                     )}
                     strokeWidth={active ? 2.2 : 1.7}
@@ -207,7 +306,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 </span>
                 <span
                   className={cn(
-                    "text-[0.58rem] font-medium tracking-wide",
+                    "text-[0.56rem] font-medium tracking-tight",
                     active ? "font-bold text-gold-soft" : "text-cream/45",
                   )}
                 >

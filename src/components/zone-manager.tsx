@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   Loader2,
-  MapPinPlus,
   PencilLine,
   Trash2,
 } from "lucide-react";
@@ -245,10 +244,15 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
   return (
     <>
       <div className="flex justify-end">
-        <Button variant="dark" onClick={openCreate}>
-          <MapPinPlus className="h-4 w-4" />
+        <Link
+          href="/zonas/nueva"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream shadow-card transition hover:bg-ink/85"
+        >
+          <svg className="h-4 w-4 text-gold-soft" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
           Nueva zona
-        </Button>
+        </Link>
       </div>
 
       {zones.length === 0 ? (
