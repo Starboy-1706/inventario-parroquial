@@ -112,23 +112,23 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
 
   /* ---------- Formulario ---------- */
   return (
-    <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:py-12">
+    <div className="mx-auto max-w-3xl px-4 py-5 sm:px-8 lg:py-12 pb-32 sm:pb-12">
       <Link
         href="/zonas"
-        className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft transition hover:text-ink"
+        className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft transition hover:text-ink active:scale-95"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Volver a zonas
       </Link>
 
-      <header className="mt-5 animate-fade-up">
+      <header className="mt-4 animate-fade-up">
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
           Parroquia Santa Bárbara
         </p>
-        <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+        <h1 className="mt-1.5 font-display text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-ink">
           Nueva zona
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
+        <p className="mt-1.5 max-w-xl text-xs sm:text-sm leading-relaxed text-ink-soft">
           Crea una estancia o ubicación física de la parroquia para clasificar
           su contenido (ej. Sacristía, Despacho, Salón Parroquial…).
         </p>
@@ -250,15 +250,16 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
           </div>
         </section>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line-soft pt-4">
+        {/* Barra de acción móvil */}
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-line bg-cream/95 p-4 backdrop-blur-md sm:static sm:z-auto sm:border-t sm:border-line-soft sm:bg-transparent sm:p-0 sm:pt-4">
           <Link
             href="/zonas"
-            className="inline-flex items-center rounded-full px-5 py-2.5 text-sm font-semibold text-ink-soft transition hover:bg-ink/5 hover:text-ink"
+            className="inline-flex items-center justify-center rounded-full border border-line bg-white px-5 py-3 text-xs font-semibold text-ink-soft transition hover:bg-ink/5 hover:text-ink sm:border-0 sm:bg-transparent sm:py-2.5 sm:text-sm"
           >
             Cancelar
           </Link>
-          <Button type="submit" variant="dark" disabled={pending}>
-            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          <Button type="submit" variant="dark" disabled={pending} className="flex-1 sm:flex-initial py-3 sm:py-2.5 shadow-lift">
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 text-gold-soft" />}
             {pending ? "Creando…" : "Crear zona"}
           </Button>
         </div>

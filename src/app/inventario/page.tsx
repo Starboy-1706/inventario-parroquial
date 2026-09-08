@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { asc } from "drizzle-orm";
-import { Boxes, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Boxes, ChevronLeft, ChevronRight, PackagePlus, Trash2 } from "lucide-react";
 import { db } from "@/db";
 import { zones } from "@/db/schema";
 import { getItemsPage } from "@/lib/queries";
@@ -45,20 +45,31 @@ export default async function InventarioPage({ searchParams }: { searchParams: S
   const activeZone = sp.zona ? allZones.find((z) => z.id === Number(sp.zona)) : undefined;
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12">
+    <div className="mx-auto max-w-6xl px-4 py-5 sm:px-8 sm:py-12">
       <header className="animate-fade-up">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-2.5">
           <div>
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">Registro completo</p>
-            <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-              {activeZone ? <>Zona: <em className="italic text-gold-deep">{activeZone.name}</em></> : "Inventario"}
+            <p className="text-[0.62rem] sm:text-[0.65rem] font-bold uppercase tracking-[0.22em] text-gold-deep dark:text-gold-soft">
+              Registro completo
+            </p>
+            <h1 className="mt-1 font-display text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-ink">
+              {activeZone ? (
+                <>Zona: <em className="italic text-gold-deep dark:text-gold-soft">{activeZone.name}</em></>
+              ) : (
+                "Inventario"
+              )}
             </h1>
-            <p className="mt-2 text-sm text-ink-soft">
-              {result.total} artículo{result.total === 1 ? "" : "s"} · página {result.page} de {result.totalPages}
+            <p className="mt-1 text-xs sm:text-sm text-ink-soft">
+              {result.total} artículo{result.total === 1 ? "" : "s"}
+              {result.totalPages > 1 && ` · pág. ${result.page}/${result.totalPages}`}
             </p>
           </div>
-          <Link href="/inventario/papelera" className="inline-flex items-center gap-2 rounded-full border border-line bg-cream px-4 py-2 text-xs font-semibold text-ink-soft transition hover:border-red-200 hover:text-red-700">
-            <Trash2 className="h-3.5 w-3.5" /> Papelera
+          <Link
+            href="/inventario/papelera"
+            className="inline-flex items-center gap-1.5 rounded-full border border-line bg-cream px-3 py-1.5 text-xs font-semibold text-ink-soft transition hover:border-red-200 hover:text-red-700 active:scale-95"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Papelera</span>
           </Link>
         </div>
       </header>
@@ -168,11 +179,20 @@ export default async function InventarioPage({ searchParams }: { searchParams: S
 
       {result.totalPages > 1 && (
         <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Paginación">
-          <Link aria-disabled={result.page === 1} href={pageHref(sp, Math.max(1, result.page - 1))} className={cn("inline-flex items-center gap-1 rounded-full border border-line bg-cream px-4 py-2 text-xs font-semibold", result.page === 1 && "pointer-events-none opacity-40")}><ChevronLeft className="h-3.5 w-3.5" />Anterior</Link>
+          <Link aria-disabled={result.page === 1} href={pageHref(sp, Math.max(1, result.page - 1))} className={cn("inline-flex items-center gap-1 rounded-full border border-line bg-cream px-4 py-2 text-xs font-semibold active:scale-95", result.page === 1 && "pointer-events-none opacity-40")}><ChevronLeft className="h-3.5 w-3.5" />Anterior</Link>
           <span className="px-3 text-xs font-medium text-ink-soft">{result.page} / {result.totalPages}</span>
-          <Link aria-disabled={result.page === result.totalPages} href={pageHref(sp, Math.min(result.totalPages, result.page + 1))} className={cn("inline-flex items-center gap-1 rounded-full border border-line bg-cream px-4 py-2 text-xs font-semibold", result.page === result.totalPages && "pointer-events-none opacity-40")}>Siguiente<ChevronRight className="h-3.5 w-3.5" /></Link>
+          <Link aria-disabled={result.page === result.totalPages} href={pageHref(sp, Math.min(result.totalPages, result.page + 1))} className={cn("inline-flex items-center gap-1 rounded-full border border-line bg-cream px-4 py-2 text-xs font-semibold active:scale-95", result.page === result.totalPages && "pointer-events-none opacity-40")}>Siguiente<ChevronRight className="h-3.5 w-3.5" /></Link>
         </nav>
       )}
+
+      {/* FAB móvil para crear artículo rápidamente */}
+      <Link
+        href={activeZone ? `/inventario/nuevo?zona=${activeZone}` : "/inventario/nuevo"}
+        className="no-print fixed bottom-20 right-4 z-30 flex h-13 w-13 items-center justify-center rounded-full bg-ink text-cream shadow-[0_4px_16px_rgba(0,0,0,0.3)] ring-2 ring-gold/40 active:scale-90 transition-transform sm:hidden"
+        aria-label="Dar de alta nuevo artículo"
+      >
+        <PackagePlus className="h-6 w-6 text-gold-soft" />
+      </Link>
     </div>
   );
 }

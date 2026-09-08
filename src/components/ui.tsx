@@ -254,7 +254,7 @@ export function Field({
 }
 
 export const inputCls =
-  "w-full rounded-xl border border-line bg-white/70 px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-faint focus:border-gold focus:ring-2 focus:ring-gold/20";
+  "w-full rounded-xl border border-line bg-white/70 px-3.5 py-2.5 text-base sm:text-sm text-ink outline-none transition placeholder:text-ink-faint focus:border-gold focus:ring-2 focus:ring-gold/20";
 
 /* ------------------------------ Varios ------------------------------ */
 

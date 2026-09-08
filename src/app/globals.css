@@ -149,13 +149,23 @@ body::before {
 }
 
 /* ---------- Impresión de etiquetas QR ---------- */
-/* ---------- Ajustes móviles específicos (max-width: 640px) ---------- */
+/* ---------- Ajustes móviles profesionales (max-width: 640px) ---------- */
 @media (max-width: 640px) {
-  /* Evitar desbordes horizontales de textos largos en tarjetas */
-  body { overflow-x: hidden; }
+  /* Evitar desbordes horizontales */
+  html, body {
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
   
-  /* Los botones en acción dentro de tarjetas ocupan todo el ancho disponible en móvil */
-  .flex.gap-2 { flex-wrap: wrap; }
+  /* Botones con área táctil cómoda mínima 44px */
+  button, a, select, input {
+    touch-action: manipulation;
+  }
+
+  /* Prevenir zoom en iOS */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 @media print {

@@ -102,55 +102,54 @@ export default async function DashboardPage() {
   const maxZoneCount = Math.max(...zones.map((z) => z.itemCount), 1);
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12">
+    <div className="mx-auto max-w-6xl px-4 py-5 sm:px-8 sm:py-12">
       {/* ---------- Cabecera ---------- */}
       <header className="animate-fade-up">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
+        <p className="text-[0.62rem] sm:text-[0.65rem] font-bold uppercase tracking-[0.22em] text-gold-deep dark:text-gold-soft">
           Parroquia Santa Bárbara · {today}
         </p>
-        <h1 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-[1.05] tracking-tight text-ink sm:text-5xl">
+        <h1 className="mt-2 max-w-2xl font-display text-2xl sm:text-4xl lg:text-5xl font-semibold leading-[1.12] tracking-tight text-ink">
           La casa del Señor,{" "}
-          <em className="font-light italic text-gold-deep">bien ordenada.</em>
+          <em className="font-light italic text-gold-deep dark:text-gold-soft">bien ordenada.</em>
         </h1>
-        <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ink-soft">
+        <p className="mt-2 max-w-xl text-xs sm:text-sm leading-relaxed text-ink-soft">
           Inventario parroquial con códigos permanentes, modo recuento por estancia,
           control de préstamos y lectura QR en tiempo real.
         </p>
 
-        {/* Botones de acción rápida */}
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        {/* Botones de acción rápida: en móvil son botones táctiles grandes 2x2 */}
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
           <Link
             href="/escaner"
-            className="group inline-flex items-center gap-2.5 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream shadow-lift transition hover:bg-basilica-deep"
+            className="group flex items-center justify-center gap-2 rounded-2xl bg-ink px-4 py-3 text-xs sm:text-sm font-bold text-cream shadow-lift transition hover:bg-basilica-deep active:scale-95 sm:rounded-full sm:px-5"
           >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-gold-soft" />
             </span>
-            Escanear un código
+            <span>Escanear QR</span>
             <ScanLine className="h-4 w-4 text-gold-soft transition-transform group-hover:scale-110" />
           </Link>
           <Link
             href="/recuento"
-            className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/15 px-5 py-3 text-sm font-semibold text-gold-deep transition hover:bg-gold/25"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-gold/40 bg-gold/15 px-4 py-3 text-xs sm:text-sm font-bold text-gold-deep transition hover:bg-gold/25 active:scale-95 sm:rounded-full sm:px-5"
           >
-            <Play className="h-4 w-4 fill-gold text-gold-deep" />
-            Modo Recuento
+            <Play className="h-3.5 w-3.5 fill-gold text-gold-deep" />
+            <span>Recuento</span>
           </Link>
           <Link
             href="/inventario/nuevo"
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-cream px-4 py-3 text-sm font-semibold text-ink transition hover:border-ink/25"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-line bg-cream px-4 py-3 text-xs sm:text-sm font-semibold text-ink transition hover:border-ink/25 active:scale-95 sm:rounded-full sm:px-5"
           >
-            <PackagePlus className="h-4 w-4" />
-            Nuevo artículo
+            <PackagePlus className="h-3.5 w-3.5 text-gold-deep" />
+            <span>+ Artículo</span>
           </Link>
           <Link
             href="/ayuda"
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-3 text-xs font-semibold text-ink-soft hover:text-ink"
-            title="Manual y guía de ayuda para el equipo"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-line bg-cream px-4 py-3 text-xs sm:text-sm font-semibold text-ink-soft hover:text-ink active:scale-95 sm:rounded-full sm:px-4 sm:border-0 sm:bg-transparent"
           >
-            <HelpCircle className="h-4 w-4 text-gold-deep" />
-            Guía de uso
+            <HelpCircle className="h-3.5 w-3.5 text-gold-deep" />
+            <span>Guía</span>
           </Link>
         </div>
       </header>
