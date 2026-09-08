@@ -246,7 +246,7 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
       <div className="flex justify-end">
         <Link
           href="/zonas/nueva"
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream shadow-card transition hover:bg-ink/85"
+          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-cream shadow-card transition active:scale-[0.98] hover:bg-ink/85 sm:w-auto sm:rounded-full sm:py-2.5"
         >
           <svg className="h-4 w-4 text-gold-soft" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 5v14M5 12h14" />
@@ -264,7 +264,7 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
           />
         </div>
       ) : (
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {zones.map((z) => {
             const zPhoto = photoUrl(z.photoId);
             return (
@@ -286,33 +286,36 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                   className="absolute inset-x-0 top-0 z-10 h-1.5"
                   style={{ backgroundColor: z.color }}
                 />
-                <div className="flex flex-1 flex-col p-5">
-                  <div className="flex items-start justify-between">
-                    <span className="relative rounded-2xl border border-line-soft bg-cream p-1 shadow-lift -mt-10 z-10 shrink-0">
+
+                {/* Acciones separadas del contenido para evitar solapamientos. */}
+                <div className="absolute right-3 top-3 z-20 flex gap-2">
+                  <button
+                    onClick={() => openEdit(z)}
+                    aria-label={`Editar ${z.name}`}
+                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-cream/95 text-ink-soft shadow-lift backdrop-blur-md transition active:scale-90 hover:text-ink"
+                  >
+                    <PencilLine className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setToDelete(z);
+                      setDestinationZoneId(
+                        zones.find((candidate) => candidate.id !== z.id)?.id ?? 0,
+                      );
+                      setDeleteError(null);
+                    }}
+                    aria-label={`Eliminar ${z.name}`}
+                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-cream/95 text-ink-soft shadow-lift backdrop-blur-md transition active:scale-90 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="flex flex-1 flex-col p-4 sm:p-5">
+                  <div className="-mt-9 flex items-start">
+                    <span className="relative z-10 shrink-0 rounded-2xl border border-line-soft bg-cream p-1 shadow-lift">
                       <ZoneIcon icon={z.icon} color={z.color} size="lg" />
                     </span>
-                    <div className="flex gap-1.5 shrink-0 -mt-2 z-10 relative">
-                      <button
-                        onClick={() => openEdit(z)}
-                        aria-label={`Editar ${z.name}`}
-                        className="cursor-pointer rounded-full bg-cream/90 p-2 text-ink-soft shadow-sm transition hover:bg-ink/5 hover:text-ink"
-                      >
-                        <PencilLine className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setToDelete(z);
-                          setDestinationZoneId(
-                            zones.find((candidate) => candidate.id !== z.id)?.id ?? 0,
-                          );
-                          setDeleteError(null);
-                        }}
-                        aria-label={`Eliminar ${z.name}`}
-                        className="cursor-pointer rounded-full bg-cream/90 p-2 text-ink-soft shadow-sm transition hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
                   </div>
                   <h3 className="mt-4 font-display text-xl font-semibold tracking-tight text-ink">
                     {z.name}

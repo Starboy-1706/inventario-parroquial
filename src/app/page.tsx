@@ -216,7 +216,7 @@ export default async function DashboardPage() {
             <s.icon className="h-4.5 w-4.5 text-gold" strokeWidth={1.8} />
             <p
               className={`mt-3 font-display font-semibold tracking-tight text-ink ${
-                s.small ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
+                s.small ? "break-words text-xl leading-tight sm:text-3xl" : "text-2xl sm:text-4xl"
               }`}
             >
               {s.value}

@@ -42,7 +42,9 @@ export function Button({
     <button
       className={cn(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
-        size === "sm" ? "px-3.5 py-1.5 text-xs" : "px-5 py-2.5 text-sm",
+        size === "sm"
+          ? "min-h-10 px-3.5 py-1.5 text-xs"
+          : "min-h-11 px-5 py-2.5 text-sm",
         variant === "primary" &&
           "bg-gold text-ink shadow-lift hover:bg-gold-soft",
         variant === "dark" && "bg-ink text-cream hover:bg-ink/85",

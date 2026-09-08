@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* El modo oscuro se controla con la clase .dark en <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
@@ -81,6 +84,16 @@ html.dark textarea {
   background-color: #1f1b13 !important;
   color: #f6f0e3 !important;
   border-color: #383023 !important;
+  color-scheme: dark;
+}
+
+/* Superficies auxiliares que usan blanco en modo claro. */
+html.dark [class~="bg-white"],
+html.dark [class~="bg-white/70"],
+html.dark [class~="bg-white/60"],
+html.dark [class~="bg-white/50"],
+html.dark [class~="bg-white/45"] {
+  background-color: #242018 !important;
 }
 
 html.dark body::before {
@@ -151,20 +164,42 @@ body::before {
 /* ---------- Impresión de etiquetas QR ---------- */
 /* ---------- Ajustes móviles profesionales (max-width: 640px) ---------- */
 @media (max-width: 640px) {
-  /* Evitar desbordes horizontales */
-  html, body {
+  html,
+  body {
     overflow-x: hidden;
+    overscroll-behavior-x: none;
     -webkit-tap-highlight-color: transparent;
   }
-  
-  /* Botones con área táctil cómoda mínima 44px */
-  button, a, select, input {
+
+  button,
+  a,
+  select,
+  input,
+  textarea {
     touch-action: manipulation;
   }
 
-  /* Prevenir zoom en iOS */
-  input, select, textarea {
+  /* iOS amplía automáticamente inputs menores de 16 px. */
+  input,
+  select,
+  textarea {
     font-size: 16px !important;
+  }
+
+  /* El contenido nunca queda oculto por la barra de navegación inferior. */
+  main {
+    scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

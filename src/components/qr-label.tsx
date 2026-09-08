@@ -20,14 +20,14 @@ export function QrLabel({
   }, [code]);
 
   return (
-    <div className="no-print rounded-3xl border border-line bg-cream p-6 text-center shadow-card">
+    <div className="no-print rounded-2xl border border-line bg-cream p-4 text-center shadow-card sm:rounded-3xl sm:p-6">
       <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-ink-soft">
         Etiqueta escaneable
       </p>
       <div className="mx-auto mt-4 w-fit rounded-2xl border border-line bg-white p-4 shadow-card">
         <QRCodeSVG
           value={url}
-          size={176}
+          size={160}
           level="M"
           fgColor="#211c12"
           bgColor="#ffffff"

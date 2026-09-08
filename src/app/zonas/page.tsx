@@ -13,22 +13,21 @@ export default async function ZonasPage() {
   const zones = await getZonesWithCounts();
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12">
+    <div className="mx-auto max-w-6xl px-4 py-5 sm:px-8 sm:py-12">
       <header className="animate-fade-up">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.22em] text-gold-deep dark:text-gold-soft sm:text-[0.65rem]">
           Ubicaciones físicas
         </p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+        <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-ink sm:text-4xl lg:text-5xl">
           Zonas de la parroquia
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
-          Cada artículo vive en una zona: sacristía, despacho, salón parroquial…
-          Filtra el inventario por zona y genera etiquetas con su prefijo
-          correspondiente.
+        <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-ink-soft sm:text-sm">
+          Organiza cada artículo por estancia y define su lugar exacto dentro de
+          armarios, estantes o cajas.
         </p>
       </header>
 
-      <div className="mt-8 animate-fade-up" style={{ animationDelay: "140ms" }}>
+      <div className="mt-5 animate-fade-up sm:mt-8" style={{ animationDelay: "140ms" }}>
         <ZoneManager zones={zones} />
       </div>
     </div>

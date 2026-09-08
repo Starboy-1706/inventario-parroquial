@@ -184,7 +184,7 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
   });
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:py-12">
+    <div className="mx-auto max-w-5xl px-4 py-5 sm:px-8 sm:py-12">
       <Link
         href="/recuento"
         className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-soft hover:text-ink"
@@ -299,7 +299,11 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
           {/* Visor de cámara integrado */}
           {cameraOpen && (
             <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-ink">
-              <Scanner />
+              <Scanner
+                compact
+                hideManual
+                onCodeDetected={(code) => handleScan(code, qtyInput)}
+              />
             </div>
           )}
 

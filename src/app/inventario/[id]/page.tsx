@@ -69,7 +69,7 @@ export default async function ItemDetailPage({ params }: Props) {
       value: (() => {
         const parts: string[] = [zone.name];
         if (row.location) parts.push(row.location.name);
-        if (item.locationNote) parts.push(`exactitud: ${item.locationNote}`);
+        if (item.locationNote) parts.push(`Lugar exacto: ${item.locationNote}`);
         return parts.join(" · ");
       })(),
     },
@@ -91,7 +91,7 @@ export default async function ItemDetailPage({ params }: Props) {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12">
+    <div className="mx-auto max-w-6xl px-4 py-5 sm:px-8 sm:py-12">
       <Link
         href={`/inventario?zona=${zone.id}`}
         className="no-print inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft transition hover:text-ink"
@@ -101,7 +101,7 @@ export default async function ItemDetailPage({ params }: Props) {
       </Link>
 
       {/* ---------- Cabecera de ficha ---------- */}
-      <header className="no-print mt-5 animate-fade-up">
+      <header className="no-print mt-4 animate-fade-up sm:mt-5">
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="rounded-lg border border-line bg-white px-3 py-1.5 font-mono text-sm font-bold tracking-[0.18em] text-ink">
             {item.code}
@@ -110,21 +110,21 @@ export default async function ItemDetailPage({ params }: Props) {
           <StatusBadge status={item.status} />
           <ConditionBadge condition={item.condition} />
         </div>
-        <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.05] tracking-tight text-ink sm:text-5xl">
+        <h1 className="mt-3 max-w-3xl font-display text-2xl font-semibold leading-[1.12] tracking-tight text-ink sm:mt-4 sm:text-4xl lg:text-5xl">
           {item.name}
         </h1>
         {item.description && (
-          <p className="mt-3 max-w-2xl text-[0.95rem] leading-relaxed text-ink-soft">
+          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-ink-soft sm:mt-3 sm:text-[0.95rem]">
             {item.description}
           </p>
         )}
       </header>
 
-      <div className="no-print mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        {/* ---------- Columna principal ---------- */}
-        <div className="space-y-6">
+      <div className="no-print mt-5 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-[1.6fr_1fr]">
+        {/* En móvil va detrás de foto y acciones; en escritorio ocupa la izquierda. */}
+        <div className="order-2 space-y-4 sm:space-y-6 lg:order-1">
           <section
-            className="animate-fade-up rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6"
+            className="animate-fade-up rounded-2xl border border-line bg-cream p-4 shadow-card sm:rounded-3xl sm:p-6"
             style={{ animationDelay: "100ms" }}
           >
             <div className="flex items-center gap-3">
@@ -164,7 +164,7 @@ export default async function ItemDetailPage({ params }: Props) {
                 minQuantity={item.minQuantity}
               />
             ) : (
-              <div className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+              <div className="rounded-2xl border border-line bg-cream p-4 shadow-card sm:rounded-3xl sm:p-6">
                 <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-ink-soft">
                   Pieza única
                 </p>
@@ -187,7 +187,7 @@ export default async function ItemDetailPage({ params }: Props) {
 
           {/* ---------- Historial ---------- */}
           <section
-            className="animate-fade-up rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6"
+            className="animate-fade-up rounded-2xl border border-line bg-cream p-4 shadow-card sm:rounded-3xl sm:p-6"
             style={{ animationDelay: "260ms" }}
           >
             <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
@@ -210,22 +210,26 @@ export default async function ItemDetailPage({ params }: Props) {
                       )}
                     </p>
                     {m.note && (
-                      <p className="mt-0.5 truncate text-xs text-ink-soft">{m.note}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-ink-soft">{m.note}</p>
                     )}
                   </div>
-                  <span className="shrink-0 text-[0.68rem] font-medium text-ink-faint">
+                  <span className="shrink-0 text-right text-[0.62rem] font-medium text-ink-faint sm:text-[0.68rem]">
                     {formatDateTime(m.createdAt)}
                   </span>
                 </li>
               ))}
             </ul>
           </section>
+
+          <div className="lg:hidden">
+            <QrLabel itemId={item.id} code={item.code} />
+          </div>
         </div>
 
         {/* ---------- Columna lateral ---------- */}
-        <div className="space-y-6">
+        <div className="order-1 flex flex-col gap-4 sm:gap-6 lg:order-2">
           {galleryIds.length > 0 && (
-            <section className="animate-fade-up overflow-hidden rounded-3xl border border-line bg-cream p-3 shadow-card" style={{ animationDelay: "100ms" }}>
+            <section className="order-1 animate-fade-up overflow-hidden rounded-2xl border border-line bg-cream p-2 shadow-card sm:rounded-3xl sm:p-3" style={{ animationDelay: "100ms" }}>
               <div className={galleryIds.length > 1 ? "grid grid-cols-2 gap-2" : ""}>
                 {galleryIds.map((photoId, index) => (
                   <figure
@@ -250,10 +254,10 @@ export default async function ItemDetailPage({ params }: Props) {
               </div>
             </section>
           )}
-          <div className="animate-fade-up" style={{ animationDelay: "140ms" }}>
+          <div className="order-3 hidden animate-fade-up lg:order-2 lg:block" style={{ animationDelay: "140ms" }}>
             <QrLabel itemId={item.id} code={item.code} />
           </div>
-          <div className="animate-fade-up" style={{ animationDelay: "220ms" }}>
+          <div className="order-2 animate-fade-up lg:order-3" style={{ animationDelay: "220ms" }}>
             <ItemActions item={item} zones={allZones} />
           </div>
         </div>

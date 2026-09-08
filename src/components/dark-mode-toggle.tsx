@@ -17,12 +17,13 @@ export function DarkModeToggle({ className }: { className?: string }) {
 
   useEffect(() => {
     const isDark = getInitialTheme();
-    // Aplicar clase al DOM al montar sin provocar cascading render
     if (isDark) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
+    const frame = requestAnimationFrame(() => setDark(isDark));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   function toggle() {

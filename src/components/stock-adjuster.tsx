@@ -55,7 +55,7 @@ export function StockAdjuster({
   return (
     <div
       className={cn(
-        "rounded-3xl border p-5 shadow-card sm:p-6",
+        "rounded-2xl border p-4 shadow-card sm:rounded-3xl sm:p-6",
         lowStock ? "border-red-200 bg-red-50/50" : "border-line bg-cream",
       )}
     >
@@ -64,7 +64,7 @@ export function StockAdjuster({
           <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-ink-soft">
             Existencias actuales
           </p>
-          <p className="mt-1 font-display text-5xl font-semibold tracking-tight text-ink">
+          <p className="mt-1 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
             {quantity}
             <span className="ml-2 align-middle font-sans text-xs font-medium uppercase tracking-widest text-ink-faint">
               uds.
@@ -87,7 +87,7 @@ export function StockAdjuster({
           <button
             disabled={pending || quantity === 0}
             onClick={() => adjust({ delta: -1, note: note || undefined }, "-1 unidad registrada")}
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+            className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm transition active:scale-90 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
             aria-label="Retirar una unidad"
           >
             <Minus className="h-4 w-4" />
@@ -95,7 +95,7 @@ export function StockAdjuster({
           <button
             disabled={pending}
             onClick={() => adjust({ delta: 1, note: note || undefined }, "+1 unidad registrada")}
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40"
+            className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm transition active:scale-90 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40"
             aria-label="Añadir una unidad"
           >
             <Plus className="h-4 w-4" />

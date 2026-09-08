@@ -62,7 +62,15 @@ function beep(ok: boolean) {
   }
 }
 
-export function Scanner() {
+export function Scanner({
+  onCodeDetected,
+  compact = false,
+  hideManual = false,
+}: {
+  onCodeDetected?: (code: string) => Promise<void> | void;
+  compact?: boolean;
+  hideManual?: boolean;
+} = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -182,6 +190,19 @@ export function Scanner() {
     const code = extractCode(raw);
     setPhase("looking");
     setLookupError(null);
+
+    // En Modo Recuento, la lectura se entrega al flujo de auditoría en vez de
+    // abrir la ficha normal. La cámara permanece activa para seguir escaneando.
+    if (onCodeDetected) {
+      try {
+        await onCodeDetected(code);
+      } finally {
+        busyRef.current = false;
+        setPhase(scannerRef.current?.isScanning ? "scanning" : "idle");
+      }
+      return;
+    }
+
     try {
       const res = await secureFetch(`/api/scan/${encodeURIComponent(code)}`);
       const data = await res.json();
@@ -245,10 +266,17 @@ export function Scanner() {
   /* ---------------- Render ---------------- */
 
   return (
-    <div className="space-y-6">
+    <div className={compact ? "space-y-3" : "space-y-4 sm:space-y-6"}>
       {/* ---------- Visor de cámara ---------- */}
-      <div className="relative overflow-hidden rounded-3xl border border-ink/80 bg-ink shadow-lift">
-        <div className="relative mx-auto aspect-[4/3] max-h-[62dvh] w-full sm:aspect-[16/10]">
+      <div className="relative overflow-hidden rounded-2xl border border-ink/80 bg-ink shadow-lift sm:rounded-3xl">
+        <div
+          className={cn(
+            "relative mx-auto w-full",
+            compact
+              ? "aspect-square max-h-[56dvh] sm:aspect-[16/10]"
+              : "aspect-[4/3] max-h-[62dvh] sm:aspect-[16/10]",
+          )}
+        >
           {/* El elemento que usa html5-qrcode debe existir siempre */}
           <div id={READER_ID} className="absolute inset-0 h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
 
@@ -358,30 +386,32 @@ export function Scanner() {
       </div>
 
       {/* ---------- Entrada manual ---------- */}
-      {(phase === "idle" || phase === "scanning") && (
+      {!hideManual && (phase === "idle" || phase === "scanning") && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
             if (manual.trim()) void lookup(manual);
           }}
-          className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-line bg-cream p-3.5 shadow-card"
+          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-line bg-cream p-2.5 shadow-card sm:p-3.5"
         >
-          <Keyboard className="ml-1 h-4 w-4 shrink-0 text-ink-faint" />
-          <input
-            value={manual}
-            onChange={(e) => setManual(e.target.value.toUpperCase())}
-            placeholder="O escribe el código a mano, ej. SAC-0001"
-            className={cn(inputCls, "min-w-40 flex-1 border-0 bg-transparent py-1.5 font-mono tracking-widest shadow-none focus:ring-0")}
-          />
+          <div className="relative min-w-0">
+            <Keyboard className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+            <input
+              value={manual}
+              onChange={(e) => setManual(e.target.value.toUpperCase())}
+              placeholder="PSB-000001 o código comercial"
+              className={cn(inputCls, "min-w-0 border-0 bg-transparent py-1.5 pl-8 pr-1 font-mono tracking-wide shadow-none focus:ring-0")}
+            />
+          </div>
           <Button type="submit" variant="dark" size="sm" disabled={!manual.trim()}>
-            Consultar
+            {onCodeDetected ? "Registrar" : "Consultar"}
           </Button>
         </form>
       )}
 
       {/* ---------- Resultado: encontrado ---------- */}
       {phase === "result" && item && (
-        <div className="animate-fade-up overflow-hidden rounded-3xl border border-line bg-cream shadow-lift">
+        <div className="animate-fade-up overflow-hidden rounded-2xl border border-line bg-cream shadow-lift sm:rounded-3xl">
           <div
             className="h-1.5 w-full"
             style={{ backgroundColor: item.zone.color }}
@@ -397,7 +427,7 @@ export function Scanner() {
               }
             />
           )}
-          <div className="p-5 sm:p-7">
+          <div className="p-4 sm:p-7">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-lg border border-line bg-white px-2.5 py-1 font-mono text-xs font-bold tracking-[0.18em] text-ink">
                 {item.code}
@@ -405,7 +435,7 @@ export function Scanner() {
               <TypeBadge type={item.itemType} />
               <StatusBadge status={item.status} />
             </div>
-            <h2 className="mt-3 font-display text-2xl font-semibold leading-tight tracking-tight text-ink sm:text-3xl">
+            <h2 className="mt-2.5 font-display text-xl font-semibold leading-tight tracking-tight text-ink sm:mt-3 sm:text-3xl">
               {item.name}
             </h2>
             <p className="mt-1.5 text-sm text-ink-soft">
@@ -428,7 +458,7 @@ export function Scanner() {
                   <button
                     onClick={() => void quickAdjust(-1)}
                     disabled={adjusting || item.quantity === 0}
-                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-ink transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-ink transition active:scale-90 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
                     aria-label="Retirar una unidad"
                   >
                     <Minus className="h-4 w-4" />
@@ -439,7 +469,7 @@ export function Scanner() {
                   <button
                     onClick={() => void quickAdjust(1)}
                     disabled={adjusting}
-                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-ink transition hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-ink transition active:scale-90 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40"
                     aria-label="Añadir una unidad"
                   >
                     <Plus className="h-4 w-4" />

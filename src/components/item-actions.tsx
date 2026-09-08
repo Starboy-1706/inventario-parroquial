@@ -73,7 +73,7 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
   const isBaja = item.status === "BAJA";
 
   return (
-    <div className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+    <div className="rounded-2xl border border-line bg-cream p-4 shadow-card sm:rounded-3xl sm:p-6">
       <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-ink-soft">
         Gestión del artículo
       </p>
@@ -90,7 +90,7 @@ export function ItemActions({ item, zones }: { item: Item; zones: Zone[] }) {
                 disabled={item.status === s}
                 onClick={() => void changeStatus(s)}
                 className={cn(
-                  "cursor-pointer rounded-xl border px-2.5 py-2 text-[0.7rem] font-semibold transition",
+                  "min-h-11 cursor-pointer rounded-xl border px-2.5 py-2 text-[0.7rem] font-semibold transition active:scale-[0.98]",
                   item.status === s
                     ? "cursor-default border-gold bg-gold/10 text-gold-deep"
                     : "border-line bg-white/70 text-ink-soft hover:border-ink/30 hover:text-ink",

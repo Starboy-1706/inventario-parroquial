@@ -67,7 +67,7 @@ export function AuditHub({
   const completed = sessions.filter((s) => s.status !== "EN_CURSO");
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:py-12">
+    <div className="mx-auto max-w-5xl px-4 py-5 sm:px-8 sm:py-12">
       {/* ---------- Cabecera ---------- */}
       <header className="animate-fade-up">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -75,7 +75,7 @@ export function AuditHub({
             <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
               Auditoría física anual
             </p>
-            <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+            <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-ink sm:text-4xl lg:text-5xl">
               Modo Recuento
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-soft">
@@ -86,6 +86,7 @@ export function AuditHub({
           </div>
           <Button
             variant="dark"
+            className="w-full sm:w-auto"
             onClick={() => {
               setZoneId(zones[0]?.id ?? 0);
               setError(null);
@@ -115,7 +116,7 @@ export function AuditHub({
               <Link
                 key={s.id}
                 href={`/recuento/${s.id}`}
-                className="group relative overflow-hidden rounded-3xl border-2 border-gold/40 bg-gold/5 p-5 shadow-card transition hover:border-gold hover:shadow-lift"
+                className="group relative overflow-hidden rounded-2xl border-2 border-gold/40 bg-gold/5 p-4 shadow-card transition active:scale-[0.99] hover:border-gold hover:shadow-lift sm:rounded-3xl sm:p-5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>

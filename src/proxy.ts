@@ -16,7 +16,10 @@ function safeNext(pathname: string, search: string) {
 /** Puerta previa: evita renderizar la aplicación antes de iniciar sesión. */
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.has(pathname);
+  const isPublic =
+    PUBLIC_PATHS.has(pathname) ||
+    pathname === "/manifest.json" ||
+    pathname.startsWith("/icons/");
   const validSession =
     verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value) !== null;
 

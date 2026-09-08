@@ -506,7 +506,10 @@ export function ItemCreateForm({
           </section>
 
           {/* Barra de acción: fija y cómoda abajo en móvil, normal en escritorio */}
-          <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-line bg-cream/95 p-4 backdrop-blur-md sm:static sm:z-auto sm:border-t sm:border-line-soft sm:bg-transparent sm:p-0 sm:pt-4">
+          <div
+            className="fixed inset-x-0 z-[45] flex items-center justify-between gap-3 border-t border-line bg-cream/95 px-4 py-3 shadow-[0_-8px_24px_rgba(33,28,18,.10)] backdrop-blur-xl sm:static sm:z-auto sm:border-t sm:border-line-soft sm:bg-transparent sm:p-0 sm:pt-4 sm:shadow-none"
+            style={{ bottom: "calc(4.35rem + env(safe-area-inset-bottom))" }}
+          >
             <Link
               href="/inventario"
               className="inline-flex items-center justify-center rounded-full border border-line bg-white px-5 py-3 text-xs font-semibold text-ink-soft transition hover:bg-ink/5 hover:text-ink sm:border-0 sm:bg-transparent sm:py-2.5 sm:text-sm"

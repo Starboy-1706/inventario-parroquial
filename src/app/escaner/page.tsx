@@ -30,12 +30,12 @@ const TIPS = [
 export default async function EscanerPage() {
   await requireAuthenticated();
   return (
-    <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8 lg:py-12">
+    <div className="mx-auto max-w-3xl px-4 py-5 sm:px-8 sm:py-12">
       <header className="animate-fade-up text-center">
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
           Lectura en tiempo real
         </p>
-        <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+        <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-ink sm:text-4xl lg:text-5xl">
           Escáner de <em className="italic text-gold-deep">códigos</em>
         </h1>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink-soft">
