@@ -7,7 +7,9 @@ import {
   ArrowLeft,
   Boxes,
   Church,
+  ClipboardList,
   Loader2,
+  MapPin,
   Ruler,
   Save,
   TriangleAlert,
@@ -16,10 +18,13 @@ import {
   CATEGORIES,
   CONDITIONS,
   CONDITION_LABELS,
+  LOCATION_KIND_ICONS,
+  LOCATION_KIND_LABELS,
   STATUSES,
   STATUS_LABELS,
+  type LocationKind,
 } from "@/lib/constants";
-import type { Item, Zone } from "@/db/schema";
+import type { Item, StorageLocation, Zone } from "@/db/schema";
 import { Button, Field, inputCls } from "@/components/ui";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { secureFetch } from "@/lib/secure-fetch";
@@ -34,9 +39,11 @@ type FieldErrors = Record<string, string>;
 export function ItemEditForm({
   zones,
   item,
+  locations = [],
 }: {
   zones: Zone[];
   item: Item;
+  locations?: StorageLocation[];
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -44,6 +51,7 @@ export function ItemEditForm({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [itemType, setItemType] = useState<string>(item.itemType);
   const [photoId, setPhotoId] = useState<number | null>(item.photoId);
+  const [selectedZoneId, setSelectedZoneId] = useState<number>(item.zoneId);
   const [money, setMoney] = useState(
     item.estimatedValue ? String(item.estimatedValue).replace(".", ",") : "",
   );
@@ -115,6 +123,17 @@ export function ItemEditForm({
       dimLengthCm: dimLength.value,
       dimWidthCm: dimWidth.value,
       dimHeightCm: dimHeight.value,
+      brand: String(fd.get("brand") ?? "").trim() || null,
+      model: String(fd.get("model") ?? "").trim() || null,
+      serialNumber: String(fd.get("serialNumber") ?? "").trim() || null,
+      material: String(fd.get("material") ?? "").trim() || null,
+      color: String(fd.get("color") ?? "").trim() || null,
+      weightKg: parseDimInput(String(fd.get("weightKg") ?? "")).value,
+      supplier: String(fd.get("supplier") ?? "").trim() || null,
+      warrantyUntil: String(fd.get("warrantyUntil") ?? "") || null,
+      externalBarcode: String(fd.get("externalBarcode") ?? "").trim() || null,
+      locationId: Number(fd.get("locationId")) || null,
+      locationNote: String(fd.get("locationNote") ?? "").trim() || null,
       description: String(fd.get("description") ?? ""),
       notes: String(fd.get("notes") ?? ""),
       photoId,
@@ -213,7 +232,8 @@ export function ItemEditForm({
                   <select
                     name="zoneId"
                     required
-                    defaultValue={item.zoneId}
+                    value={selectedZoneId}
+                    onChange={(e) => setSelectedZoneId(Number(e.target.value))}
                     className={cn(inputCls, errors.zoneId && "border-red-300 ring-red-100")}
                     style={
                       zoneColor
@@ -246,6 +266,93 @@ export function ItemEditForm({
                 </select>
               </Field>
             </div>
+          </div>
+        </section>
+
+        {/* ---------- Ubicación exacta ---------- */}
+        <section className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+          <h2 className="flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.2em] text-gold-deep">
+            <MapPin className="h-3.5 w-3.5" />
+            Ubicación exacta dentro de la zona
+          </h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <Field label="Mueble o contenedor" hint="Armario, archivero, estante, cajón…">
+                <select
+                  name="locationId"
+                  defaultValue={item.locationId ?? ""}
+                  key={selectedZoneId}
+                  className={inputCls}
+                >
+                  <option value="">Sin detallar</option>
+                  {locations
+                    .filter((l) => l.zoneId === selectedZoneId)
+                    .map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.parentId ? "↳ " : ""}
+                        {LOCATION_KIND_ICONS[l.kind as LocationKind] ?? "📍"} {l.name}
+                        {" · "}
+                        {LOCATION_KIND_LABELS[l.kind as LocationKind] ?? "Otro"}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+              <Link
+                href={`/zonas/${selectedZoneId}/ubicaciones`}
+                className="mt-1 inline-block text-[0.68rem] font-bold text-gold-deep underline"
+              >
+                Gestionar armarios y archiveros de esta zona →
+              </Link>
+            </div>
+            <Field label="Lugar exacto" hint="ej. cajón de plata, fondo derecho">
+              <input
+                name="locationNote"
+                maxLength={300}
+                defaultValue={item.locationNote ?? ""}
+                placeholder="Detalle adicional del lugar"
+                className={inputCls}
+              />
+            </Field>
+          </div>
+        </section>
+
+        {/* ---------- Ficha técnica ---------- */}
+        <section className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+          <h2 className="flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.2em] text-gold-deep">
+            <ClipboardList className="h-3.5 w-3.5" />
+            Ficha técnica
+          </h2>
+          <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+            Marca, modelo y demás datos de identificación. Todos son opcionales.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Field label="Marca / fabricante">
+              <input name="brand" maxLength={120} defaultValue={item.brand ?? ""} placeholder="Ej. Molina, Yamaha" className={inputCls} />
+            </Field>
+            <Field label="Modelo">
+              <input name="model" maxLength={120} defaultValue={item.model ?? ""} placeholder="Ej. P-125" className={inputCls} />
+            </Field>
+            <Field label="Nº de serie">
+              <input name="serialNumber" maxLength={120} defaultValue={item.serialNumber ?? ""} placeholder="Ej. SN-93A72B" className={`${inputCls} font-mono`} />
+            </Field>
+            <Field label="Código de barras comercial">
+              <input name="externalBarcode" maxLength={128} defaultValue={item.externalBarcode ?? ""} placeholder="EAN / UPC" className={`${inputCls} font-mono`} />
+            </Field>
+            <Field label="Material">
+              <input name="material" maxLength={160} defaultValue={item.material ?? ""} placeholder="Ej. Plata de ley, nogal" className={inputCls} />
+            </Field>
+            <Field label="Color / acabado">
+              <input name="color" maxLength={80} defaultValue={item.color ?? ""} placeholder="Ej. Dorado mate" className={inputCls} />
+            </Field>
+            <Field label="Peso (kg)" hint="Admite decimales: 2,5">
+              <input name="weightKg" inputMode="decimal" defaultValue={item.weightKg ?? ""} placeholder="0,00" className={`${inputCls} font-mono`} />
+            </Field>
+            <Field label="Proveedor / procedencia">
+              <input name="supplier" maxLength={160} defaultValue={item.supplier ?? ""} placeholder="Ej. Donación familia Herrero" className={inputCls} />
+            </Field>
+            <Field label="Garantía hasta">
+              <input name="warrantyUntil" type="date" defaultValue={item.warrantyUntil ?? ""} className={inputCls} />
+            </Field>
           </div>
         </section>
 

@@ -119,6 +119,65 @@ const ITEM_DIMS_CM = {
   "Libro de Bautismos · Tomo VII": [35, 26, 7],
 };
 
+// Ubicaciones exactas por zona: [nombre, tipo, nombre del padre o null]
+const LOCATIONS = {
+  "Sacristía": [
+    ["Armario de ornamentos", "ARMARIO", null],
+    ["Balda superior", "ESTANTE", "Armario de ornamentos"],
+    ["Cajón de corporales", "CAJON", "Armario de ornamentos"],
+    ["Vitrina de orfebrería", "VITRINA", null],
+    ["Caja fuerte", "CAJA_FUERTE", null],
+  ],
+  "Presbiterio y Altar": [
+    ["Credencia", "MESA", null],
+    ["Armario del presbiterio", "ARMARIO", null],
+  ],
+  "Despacho Parroquial": [
+    ["Archivero A", "ARCHIVERO", null],
+    ["Gaveta 1 (Bautismos)", "CAJON", "Archivero A"],
+    ["Gaveta 2 (Matrimonios)", "CAJON", "Archivero A"],
+    ["Estantería de libros", "ESTANTERIA", null],
+  ],
+  "Salón Parroquial": [
+    ["Almacén del salón", "ARMARIO", null],
+    ["Estantería de material", "ESTANTERIA", null],
+  ],
+  "Almacén": [
+    ["Estantería metálica", "ESTANTERIA", null],
+    ["Balda de consumibles", "ESTANTE", "Estantería metálica"],
+    ["Baúl de limpieza", "BAUL", null],
+  ],
+  "Coro": [
+    ["Armario de partituras", "ARMARIO", null],
+  ],
+};
+
+// Ficha técnica de ejemplo: nombre -> { marca, modelo, material, color, peso, proveedor, ubicación }
+const ITEM_SPECS = {
+  "Cáliz de plata dorada (s. XIX)": { brand: "Talleres Granda", model: "Gótico 340", material: "Plata de ley sobredorada", color: "Dorado brillante", weight: 0.82, supplier: "Donación familia Herrero", location: "Vitrina de orfebrería" },
+  "Custodia barroca de altar": { brand: "Orfebrería Molina", model: "Sol Radiante XL", material: "Plata sobredorada", color: "Dorado", weight: 3.4, location: "Vitrina de orfebrería" },
+  "Copón de plata con tapa": { brand: "Talleres Granda", model: "Clásico 210", material: "Plata de ley", color: "Plateado", weight: 0.64, location: "Caja fuerte" },
+  "Juego de casullas (4 colores litúrgicos)": { brand: "Sedas Toledo", model: "Espigas", material: "Poliéster y seda", color: "4 colores litúrgicos", weight: 2.2, location: "Armario de ornamentos" },
+  "Incensario y naveta de latón": { brand: "Metalistería Ortiz", model: "Tradicional", material: "Latón", color: "Dorado envejecido", weight: 1.1, location: "Armario de ornamentos" },
+  "Crucifijo de altar mayor": { brand: "Arte Sacro León", model: "Bronce 45", material: "Bronce y nogal", color: "Bronce oscuro", weight: 4.6, location: "Credencia" },
+  "Candeleros de altar (juego de 6)": { brand: "Metalistería Ortiz", model: "Torneado 6P", material: "Latón", color: "Dorado", weight: 7.8, location: "Armario del presbiterio" },
+  "Velas de altar (unidades)": { brand: "Ceras Aurora", model: "Litúrgica 60", material: "Cera 65%", color: "Marfil", location: "Credencia" },
+  "Libro de Bautismos · Tomo VII": { material: "Papel verjurado y piel", color: "Burdeos", location: "Gaveta 1 (Bautismos)" },
+  "Portátil HP ProBook (secretaría)": { brand: "HP", model: "ProBook 450 G9", serial: "5CD2419XYZ", material: "Aluminio", color: "Plata", weight: 1.74, supplier: "Informática Belén", warranty: "2027-03-31", location: "Estantería de libros" },
+  "Sobres membretados (unidades)": { brand: "Papelería Sanz", model: "A5 membrete", material: "Papel 90 g", color: "Blanco", location: "Archivero A" },
+  "Mesas plegables de resina": { brand: "Lifetime", model: "80387", material: "Resina y acero", color: "Blanco", weight: 12.5, location: "Almacén del salón" },
+  "Sillas apilables": { brand: "Resol", model: "Barcelona", material: "Polipropileno", color: "Gris", weight: 3.6, location: "Almacén del salón" },
+  "Proyector Epson + pantalla": { brand: "Epson", model: "EB-W06", serial: "X4TF8900123", material: "Policarbonato", color: "Blanco", weight: 2.5, supplier: "Informática Belén", warranty: "2027-09-30", location: "Estantería de material" },
+  "Equipo de megafonía portátil": { brand: "Fonestar", model: "MEGA-150", material: "ABS", color: "Negro", weight: 6.2, location: "Estantería de material" },
+  "Cafetera industrial 60 tazas": { brand: "Lacor", model: "69060", material: "Acero inoxidable", color: "Inox", weight: 3.9, location: "Almacén del salón" },
+  "Cajas de hostias (cajas de 500)": { brand: "Hermanas Clarisas", model: "Pan ácimo 35 mm", material: "Trigo", color: "Blanco", location: "Balda de consumibles" },
+  "Velas de cera para ofrenda (unidades)": { brand: "Ceras Aurora", model: "Votiva 20", material: "Cera", color: "Marfil", location: "Balda de consumibles" },
+  "Vino de misa (botellas)": { brand: "Bodegas Sacristía", model: "Jerez dulce 75 cl", material: "Vidrio", color: "Ámbar", location: "Balda de consumibles" },
+  "Productos de limpieza (lotes)": { material: "Varios", location: "Baúl de limpieza" },
+  "Teclado digital Yamaha P-125": { brand: "Yamaha", model: "P-125", serial: "YP125-8841", material: "ABS", color: "Negro", weight: 11.8, supplier: "Musical Aranda", warranty: "2026-12-31", location: "Armario de partituras" },
+  "Atriles para partituras": { brand: "König & Meyer", model: "10062", material: "Acero", color: "Negro", weight: 2.1, location: "Armario de partituras" },
+};
+
 const EXTRA_MOVEMENTS = [
   ["Vinajeras de cristal con bandeja", "ESTADO", 0, "DISPONIBLE → DISPONIBLE · Revisión pascual"],
   ["Velas de altar (unidades)", "SALIDA", 6, "-6 uds · Semana Santa"],
@@ -148,6 +207,18 @@ async function main() {
       zoneIds[z.name] = rows[0].id;
     }
 
+    // Ubicaciones exactas (armarios, archiveros, cajones…)
+    const locationIds = {};
+    for (const [zoneName, list] of Object.entries(LOCATIONS)) {
+      for (const [locName, kind, parentName] of list) {
+        const { rows } = await client.query(
+          `INSERT INTO storage_locations (zone_id, parent_id, name, kind) VALUES ($1,$2,$3,$4) RETURNING id`,
+          [zoneIds[zoneName], parentName ? locationIds[parentName] : null, locName, kind],
+        );
+        locationIds[locName] = rows[0].id;
+      }
+    }
+
     for (const [i, it] of ITEMS.entries()) {
       const [name, zone, type, qty, min, status, cond, cat, value, desc] = it;
       const p = prefix(zone);
@@ -161,6 +232,16 @@ async function main() {
       const id = rows[0].id;
       const code = `${p}-${String(id).padStart(4, "0")}`;
       await client.query(`UPDATE items SET code = $1 WHERE id = $2`, [code, id]);
+      const spec = ITEM_SPECS[name];
+      if (spec) {
+        await client.query(
+          `UPDATE items SET brand=$2, model=$3, serial_number=$4, material=$5, color=$6,
+             weight_kg=$7, supplier=$8, warranty_until=$9, location_id=$10 WHERE id=$1`,
+          [id, spec.brand ?? null, spec.model ?? null, spec.serial ?? null, spec.material ?? null,
+           spec.color ?? null, spec.weight ?? null, spec.supplier ?? null, spec.warranty ?? null,
+           spec.location ? locationIds[spec.location] ?? null : null],
+        );
+      }
       const dcm = ITEM_DIMS_CM[name];
       if (dcm) {
         await client.query(`UPDATE items SET dim_length_cm = $2, dim_width_cm = $3, dim_height_cm = $4 WHERE id = $1`, [id, dcm[0], dcm[1], dcm[2]]);

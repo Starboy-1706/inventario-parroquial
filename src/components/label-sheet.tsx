@@ -27,6 +27,8 @@ function Label({
   opt,
   description,
   dimensions,
+  spec,
+  locationPath,
   parishName,
 }: {
   code: string;
@@ -38,6 +40,10 @@ function Label({
   opt: Option;
   description?: string | null;
   dimensions?: string | null;
+  /** "Marca · Modelo" para la etiqueta grande. */
+  spec?: string | null;
+  /** Ruta de ubicación exacta (armario → balda → caja). */
+  locationPath?: string | null;
   parishName: string;
 }) {
   const big = opt.perPage === 1;
@@ -124,6 +130,22 @@ function Label({
         {name}
       </p>
 
+      {big && spec && (
+        <p
+          style={{
+            margin: 0,
+            fontSize: 12,
+            fontWeight: 700,
+            color: "#211c12",
+            letterSpacing: 0.4,
+          }}
+        >
+          {spec}
+        </p>
+      )}
+      {big && locationPath && (
+        <p style={{ margin: 0, fontSize: 10.5, color: "#6b7280" }}>📍 {locationPath}</p>
+      )}
       {big && description && (
         <p
           style={{
@@ -182,16 +204,19 @@ export function LabelSheet({
   zone,
   baseUrl,
   parishName = "Parroquia Santa Bárbara",
+  locationPath = null,
 }: {
   item: Item;
   zone: Zone;
   baseUrl: string;
   parishName?: string;
+  locationPath?: string | null;
 }) {
   const [optIdx, setOptIdx] = useState(0);
   const opt = OPTIONS[optIdx];
   const url = `${baseUrl}/escaner?code=${item.code}`;
   const dimensions = formatItemDimensions(item);
+  const spec = [item.brand, item.model].filter(Boolean).join(" · ") || null;
 
   /*
    * Artículo acumulable → tantas etiquetas como unidades existan,
@@ -320,6 +345,8 @@ export function LabelSheet({
                   opt={opt}
                   description={item.description}
                   dimensions={dimensions}
+                  spec={spec}
+                  locationPath={locationPath}
                   parishName={parishName}
                 />
               ))}

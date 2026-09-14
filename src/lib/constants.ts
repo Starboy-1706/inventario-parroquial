@@ -98,6 +98,57 @@ export const CATEGORIES = [
   "Otros",
 ] as const;
 
+/* ---------- Ubicaciones exactas dentro de una zona ---------- */
+export const LOCATION_KINDS = [
+  "ARMARIO",
+  "ARCHIVERO",
+  "ESTANTERIA",
+  "ESTANTE",
+  "CAJON",
+  "CAJA",
+  "VITRINA",
+  "PERCHERO",
+  "BAUL",
+  "REPISA",
+  "MESA",
+  "CAJA_FUERTE",
+  "OTRO",
+] as const;
+export type LocationKind = (typeof LOCATION_KINDS)[number];
+
+export const LOCATION_KIND_LABELS: Record<LocationKind, string> = {
+  ARMARIO: "Armario",
+  ARCHIVERO: "Archivero",
+  ESTANTERIA: "Estantería",
+  ESTANTE: "Estante / balda",
+  CAJON: "Cajón",
+  CAJA: "Caja",
+  VITRINA: "Vitrina",
+  PERCHERO: "Perchero / cajonera de ornamentos",
+  BAUL: "Baúl / arcón",
+  REPISA: "Repisa",
+  MESA: "Mesa / mostrador",
+  CAJA_FUERTE: "Caja fuerte",
+  OTRO: "Otro",
+};
+
+/** Emoji representativo, útil en listas compactas y etiquetas. */
+export const LOCATION_KIND_ICONS: Record<LocationKind, string> = {
+  ARMARIO: "🚪",
+  ARCHIVERO: "🗄️",
+  ESTANTERIA: "🗃️",
+  ESTANTE: "📚",
+  CAJON: "📦",
+  CAJA: "📦",
+  VITRINA: "🪟",
+  PERCHERO: "🧥",
+  BAUL: "🧰",
+  REPISA: "🪵",
+  MESA: "🪑",
+  CAJA_FUERTE: "🔐",
+  OTRO: "📍",
+};
+
 export const ZONE_ICONS = [
   "church",
   "archive",

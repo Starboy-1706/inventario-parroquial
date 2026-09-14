@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { appSettings, items, zones } from "@/db/schema";
+import { appSettings, items, storageLocations, zones } from "@/db/schema";
+import { LOCATION_KIND_ICONS, type LocationKind } from "@/lib/constants";
 import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
 import { LabelSheet } from "@/components/label-sheet";
 
@@ -39,12 +40,43 @@ export default async function EtiquetaPage({
     h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const baseUrl = `${protocol}://${host}`;
 
+  // Ruta jerárquica de la ubicación exacta para la etiqueta grande
+  let locationPath: string | null = null;
+  if (row.item.locationId) {
+    const zoneLocations = await db
+      .select({
+        id: storageLocations.id,
+        parentId: storageLocations.parentId,
+        name: storageLocations.name,
+        kind: storageLocations.kind,
+      })
+      .from(storageLocations)
+      .where(eq(storageLocations.zoneId, row.zone.id));
+    const byId = new Map(zoneLocations.map((l) => [l.id, l]));
+    const chain: string[] = [];
+    let cursor = byId.get(row.item.locationId);
+    let guard = 0;
+    while (cursor && guard++ < 12) {
+      chain.unshift(
+        `${LOCATION_KIND_ICONS[cursor.kind as LocationKind] ?? ""} ${cursor.name}`.trim(),
+      );
+      cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined;
+    }
+    locationPath = chain.join(" → ") || null;
+  }
+  if (row.item.locationNote) {
+    locationPath = locationPath
+      ? `${locationPath} · ${row.item.locationNote}`
+      : row.item.locationNote;
+  }
+
   return (
     <LabelSheet
       item={row.item}
       zone={row.zone}
       baseUrl={baseUrl}
       parishName={settings?.parishName ?? "Parroquia Santa Bárbara"}
+      locationPath={locationPath}
     />
   );
 }

@@ -85,6 +85,14 @@ export const itemCreateSchema = z
     dimLengthCm: dimField(ITEM_DIM_MAX_CM),
     dimWidthCm: dimField(ITEM_DIM_MAX_CM),
     dimHeightCm: dimField(ITEM_DIM_MAX_CM),
+    brand: nullableText(120),
+    model: nullableText(120),
+    serialNumber: nullableText(120),
+    material: nullableText(160),
+    color: nullableText(80),
+    weightKg: dimField(100_000),
+    supplier: nullableText(160),
+    warrantyUntil: dateField,
   })
   .transform((data) => ({
     ...data,
@@ -115,6 +123,14 @@ export const itemUpdateSchema = z
     dimLengthCm: dimField(ITEM_DIM_MAX_CM).optional(),
     dimWidthCm: dimField(ITEM_DIM_MAX_CM).optional(),
     dimHeightCm: dimField(ITEM_DIM_MAX_CM).optional(),
+    brand: nullableText(120).optional(),
+    model: nullableText(120).optional(),
+    serialNumber: nullableText(120).optional(),
+    material: nullableText(160).optional(),
+    color: nullableText(80).optional(),
+    weightKg: dimField(100_000).optional(),
+    supplier: nullableText(160).optional(),
+    warrantyUntil: dateField.optional(),
     deletedReason: nullableText(500).optional(),
   })
   .strict();

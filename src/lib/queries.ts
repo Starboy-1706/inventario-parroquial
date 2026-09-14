@@ -86,6 +86,12 @@ function buildItemConditions(filters: ItemFilters) {
         ilike(items.code, q),
         ilike(items.category, q),
         ilike(items.externalBarcode, q),
+        // Búsqueda también por ficha técnica y descripción
+        ilike(items.brand, q),
+        ilike(items.model, q),
+        ilike(items.serialNumber, q),
+        ilike(items.material, q),
+        ilike(items.description, q),
         sql`exists (select 1 from item_code_aliases a where a.item_id = ${items.id} and a.code ilike ${q})`,
       )!,
     );

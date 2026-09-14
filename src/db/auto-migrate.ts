@@ -40,6 +40,8 @@ export async function ensureDbSchema(): Promise<void> {
             SELECT 1 FROM items, audit_sessions, app_settings LIMIT 1;
             SELECT dim_length_cm, dim_width_cm, dim_height_cm FROM items LIMIT 0;
             SELECT dim_length_m, dim_width_m, dim_height_m FROM zones LIMIT 0;
+            SELECT brand, model, serial_number, material, color, weight_kg,
+                   supplier, warranty_until FROM items LIMIT 0;
           `);
           if (check) {
             isSchemaVerified = true;
@@ -92,6 +94,16 @@ export async function ensureDbSchema(): Promise<void> {
           ALTER TABLE items ADD COLUMN IF NOT EXISTS dim_length_cm numeric(10,1);
           ALTER TABLE items ADD COLUMN IF NOT EXISTS dim_width_cm numeric(10,1);
           ALTER TABLE items ADD COLUMN IF NOT EXISTS dim_height_cm numeric(10,1);
+
+          -- Ficha técnica del artículo
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS brand text;
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS model text;
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS serial_number text;
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS material text;
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS color text;
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS weight_kg numeric(10,3);
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS supplier text;
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS warranty_until date;
           ALTER TABLE items ADD COLUMN IF NOT EXISTS location_id integer REFERENCES storage_locations(id) ON DELETE SET NULL;
           ALTER TABLE items ADD COLUMN IF NOT EXISTS location_note text;
           ALTER TABLE items ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;

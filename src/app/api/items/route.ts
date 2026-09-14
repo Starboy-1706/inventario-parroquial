@@ -126,6 +126,14 @@ export async function POST(request: NextRequest) {
           dimLengthCm: data.dimLengthCm !== null ? String(data.dimLengthCm) : null,
           dimWidthCm: data.dimWidthCm !== null ? String(data.dimWidthCm) : null,
           dimHeightCm: data.dimHeightCm !== null ? String(data.dimHeightCm) : null,
+          brand: data.brand,
+          model: data.model,
+          serialNumber: data.serialNumber,
+          material: data.material,
+          color: data.color,
+          weightKg: data.weightKg !== null ? String(data.weightKg) : null,
+          supplier: data.supplier,
+          warrantyUntil: data.warrantyUntil,
           notes: data.notes,
         })
         .returning();

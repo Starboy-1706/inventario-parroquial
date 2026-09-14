@@ -8,6 +8,7 @@ import {
   Boxes,
   Check,
   Church,
+  ClipboardList,
   Loader2,
   PackagePlus,
   Ruler,
@@ -18,8 +19,11 @@ import {
   CATEGORIES,
   CONDITIONS,
   CONDITION_LABELS,
+  LOCATION_KIND_ICONS,
+  LOCATION_KIND_LABELS,
   STATUSES,
   STATUS_LABELS,
+  type LocationKind,
 } from "@/lib/constants";
 import type { Category, StorageLocation, Zone } from "@/db/schema";
 import { Button, Field, inputCls } from "@/components/ui";
@@ -152,6 +156,14 @@ export function ItemCreateForm({
       dimLengthCm: dimLength.value,
       dimWidthCm: dimWidth.value,
       dimHeightCm: dimHeight.value,
+      brand: String(fd.get("brand") ?? "").trim() || null,
+      model: String(fd.get("model") ?? "").trim() || null,
+      serialNumber: String(fd.get("serialNumber") ?? "").trim() || null,
+      material: String(fd.get("material") ?? "").trim() || null,
+      color: String(fd.get("color") ?? "").trim() || null,
+      weightKg: parseDimInput(String(fd.get("weightKg") ?? "")).value,
+      supplier: String(fd.get("supplier") ?? "").trim() || null,
+      warrantyUntil: String(fd.get("warrantyUntil") ?? "") || null,
       description: String(fd.get("description") ?? ""),
       notes: String(fd.get("notes") ?? ""),
       photoId: photoIds[0] ?? null,
@@ -329,14 +341,27 @@ export function ItemCreateForm({
                     ))}
                   </select>
                 </Field>
-                <Field label="Ubicación detallada" hint="Armario, estante o caja (opcional)">
-                  <select name="locationId" defaultValue="" className={inputCls}>
-                    <option value="">Sin detallar</option>
-                    {locations.filter((l) => l.zoneId === selectedZoneId).map((l) => (
-                      <option key={l.id} value={l.id}>{l.parentId ? "↳ " : ""}{l.name}</option>
-                    ))}
-                  </select>
-                </Field>
+                <div>
+                  <Field label="Ubicación exacta" hint="Armario, archivero, estante, cajón…">
+                    <select name="locationId" defaultValue="" className={inputCls}>
+                      <option value="">Sin detallar</option>
+                      {locations.filter((l) => l.zoneId === selectedZoneId).map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.parentId ? "↳ " : ""}
+                          {LOCATION_KIND_ICONS[l.kind as LocationKind] ?? "📍"} {l.name}
+                          {" · "}
+                          {LOCATION_KIND_LABELS[l.kind as LocationKind] ?? "Otro"}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Link
+                    href={`/zonas/${selectedZoneId}/ubicaciones`}
+                    className="mt-1 inline-block text-[0.68rem] font-bold text-gold-deep underline"
+                  >
+                    Gestionar armarios y archiveros de esta zona →
+                  </Link>
+                </div>
                 <Field label="Lugar exacto en esa ubicación" hint="ej. cajón de plata, fondo derecho">
                   <input name="locationNote" maxLength={300} placeholder="Detalle adicional del lugar" className={inputCls} />
                 </Field>
@@ -487,6 +512,43 @@ export function ItemCreateForm({
                   <p className="mt-1 text-xs font-medium text-red-600">{errors.acquisitionDate}</p>
                 )}
               </div>
+            </div>
+          </section>
+
+          {/* ---------- Ficha técnica ---------- */}
+          <section className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+            <h2 className="flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.2em] text-gold-deep">
+              <ClipboardList className="h-3.5 w-3.5" />
+              Ficha técnica
+            </h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+              Marca, modelo y demás datos de identificación. Todos son opcionales.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label="Marca / fabricante">
+                <input name="brand" maxLength={120} placeholder="Ej. Molina, Yamaha, Talleres Granda" className={inputCls} />
+              </Field>
+              <Field label="Modelo">
+                <input name="model" maxLength={120} placeholder="Ej. P-125, Serie Gótica 340" className={inputCls} />
+              </Field>
+              <Field label="Nº de serie">
+                <input name="serialNumber" maxLength={120} placeholder="Ej. SN-93A72B" className={`${inputCls} font-mono`} />
+              </Field>
+              <Field label="Material">
+                <input name="material" maxLength={160} placeholder="Ej. Plata de ley, madera de nogal" className={inputCls} />
+              </Field>
+              <Field label="Color / acabado">
+                <input name="color" maxLength={80} placeholder="Ej. Dorado mate, roble oscuro" className={inputCls} />
+              </Field>
+              <Field label="Peso (kg)" hint="Admite decimales: 2,5">
+                <input name="weightKg" inputMode="decimal" placeholder="0,00" className={`${inputCls} font-mono`} />
+              </Field>
+              <Field label="Proveedor / procedencia">
+                <input name="supplier" maxLength={160} placeholder="Ej. Donación familia Herrero" className={inputCls} />
+              </Field>
+              <Field label="Garantía hasta">
+                <input name="warrantyUntil" type="date" className={inputCls} />
+              </Field>
             </div>
           </section>
 

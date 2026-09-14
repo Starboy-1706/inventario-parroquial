@@ -16,7 +16,13 @@ import { StockAdjuster } from "@/components/stock-adjuster";
 import { ItemActions } from "@/components/item-actions";
 import { ItemCarePanel } from "@/components/item-care-panel";
 import { PhotoFrame } from "@/components/photo-frame";
-import { MOVEMENT_LABELS, type MovementType } from "@/lib/constants";
+import {
+  LOCATION_KIND_ICONS,
+  MOVEMENT_LABELS,
+  type LocationKind,
+  type MovementType,
+} from "@/lib/constants";
+import { SpecSheet } from "@/components/spec-sheet";
 import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
 import { cn, formatDate, formatDateTime, formatItemDimensions, formatMoney, formatZoneDimensions, photoUrl } from "@/lib/utils";
 
@@ -61,25 +67,43 @@ export default async function ItemDetailPage({ params }: Props) {
       ? [item.photoId]
       : [];
 
-  const itemDims = formatItemDimensions(item);
   const zoneDims = formatZoneDimensions(zone);
 
+  /* Ruta jerárquica completa de la ubicación: Armario → Balda 2 → Caja */
+  let locationPath: string | null = null;
+  if (row.location) {
+    const zoneLocations = await db
+      .select({
+        id: storageLocations.id,
+        parentId: storageLocations.parentId,
+        name: storageLocations.name,
+        kind: storageLocations.kind,
+      })
+      .from(storageLocations)
+      .where(eq(storageLocations.zoneId, zone.id));
+    const byId = new Map(zoneLocations.map((l) => [l.id, l]));
+    const chain: string[] = [];
+    let cursor = byId.get(row.location.id);
+    let guard = 0;
+    while (cursor && guard++ < 12) {
+      chain.unshift(
+        `${LOCATION_KIND_ICONS[cursor.kind as LocationKind] ?? "📍"} ${cursor.name}`,
+      );
+      cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined;
+    }
+    locationPath = chain.join(" → ");
+  }
+  if (item.locationNote) {
+    locationPath = locationPath
+      ? `${locationPath} · ${item.locationNote}`
+      : item.locationNote;
+  }
+
   const meta = [
-    { icon: Tag, label: "Categoría", value: item.category },
     {
       icon: MapPin,
-      label: "Zona y lugar exacto",
-      value: (() => {
-        const parts: string[] = [zone.name];
-        if (row.location) parts.push(row.location.name);
-        if (item.locationNote) parts.push(`Lugar exacto: ${item.locationNote}`);
-        return parts.join(" · ");
-      })(),
-    },
-    {
-      icon: Ruler,
-      label: "Medidas (cm)",
-      value: itemDims ?? "Sin registrar",
+      label: "Zona",
+      value: zone.name,
     },
     {
       icon: Calendar,
@@ -165,8 +189,31 @@ export default async function ItemDetailPage({ params }: Props) {
                 </div>
               ))}
             </dl>
+            {/* Ubicación exacta dentro de la zona */}
+            <div className="mt-4 rounded-2xl border border-line-soft bg-white/60 px-4 py-3">
+              <p className="flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                <MapPin className="h-3 w-3" />
+                Ubicación exacta
+              </p>
+              {locationPath ? (
+                <p className="mt-1 text-sm font-medium leading-relaxed text-ink">
+                  {locationPath}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm italic text-ink-faint">
+                  Sin ubicación asignada ·{" "}
+                  <Link
+                    href={`/zonas/${zone.id}/ubicaciones`}
+                    className="font-semibold not-italic text-gold-deep underline"
+                  >
+                    crear armarios y archiveros
+                  </Link>
+                </p>
+              )}
+            </div>
+
             {item.notes && (
-              <div className="mt-5 rounded-2xl border border-gold/25 bg-gold/8 px-4 py-3">
+              <div className="mt-4 rounded-2xl border border-gold/25 bg-gold/8 px-4 py-3">
                 <p className="flex items-center gap-1.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-gold-deep">
                   <ScrollText className="h-3 w-3" />
                   Notas internas
@@ -175,6 +222,11 @@ export default async function ItemDetailPage({ params }: Props) {
               </div>
             )}
           </section>
+
+          {/* ---------- Ficha técnica ---------- */}
+          <div className="animate-fade-up" style={{ animationDelay: "150ms" }}>
+            <SpecSheet item={item} locationPath={locationPath} />
+          </div>
 
           <div className="animate-fade-up" style={{ animationDelay: "180ms" }}>
             {item.itemType === "CONTABLE" ? (

@@ -162,6 +162,21 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         : data.dimHeightCm === null
           ? null
           : String(data.dimHeightCm),
+    brand: data.brand === undefined ? current.brand : data.brand,
+    model: data.model === undefined ? current.model : data.model,
+    serialNumber:
+      data.serialNumber === undefined ? current.serialNumber : data.serialNumber,
+    material: data.material === undefined ? current.material : data.material,
+    color: data.color === undefined ? current.color : data.color,
+    weightKg:
+      data.weightKg === undefined
+        ? current.weightKg
+        : data.weightKg === null
+          ? null
+          : String(data.weightKg),
+    supplier: data.supplier === undefined ? current.supplier : data.supplier,
+    warrantyUntil:
+      data.warrantyUntil === undefined ? current.warrantyUntil : data.warrantyUntil,
   };
   const labels: Record<keyof typeof candidate, string> = {
     name: "nombre",
@@ -183,6 +198,14 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     dimLengthCm: "largo",
     dimWidthCm: "ancho",
     dimHeightCm: "alto",
+    brand: "marca",
+    model: "modelo",
+    serialNumber: "número de serie",
+    material: "material",
+    color: "color / acabado",
+    weightKg: "peso",
+    supplier: "proveedor",
+    warrantyUntil: "garantía",
   };
   for (const key of Object.keys(candidate) as (keyof typeof candidate)[]) {
     if (comparable(candidate[key]) !== comparable(current[key])) changes.push(labels[key]);

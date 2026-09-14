@@ -129,6 +129,12 @@ export default async function InventarioPage({ searchParams }: { searchParams: S
                       <p className="mt-0.5 line-clamp-1 text-[0.68rem] text-ink-soft sm:mt-1 sm:text-xs">
                         {it.category}
                       </p>
+                      {/* Marca y modelo: identificación rápida */}
+                      {(it.brand || it.model) && (
+                        <p className="mt-1 line-clamp-1 text-[0.7rem] font-semibold text-ink">
+                          {[it.brand, it.model].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
 
                       {/* Descripción del objeto visible en el listado */}
                       {it.description && (

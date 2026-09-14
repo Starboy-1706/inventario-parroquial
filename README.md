@@ -53,6 +53,28 @@ zonas**, con **códigos únicos escaneables (QR/barras)** por artículo y un
   «Ejemplar 1 de N … N de N», en la ficha individual, por zona y por lote
   (límite de seguridad: 300 por artículo).
 
+## Ficha técnica, ubicaciones exactas y descripciones
+
+- **Ficha técnica completa por artículo** — Marca, modelo, nº de serie, código
+  de barras, material, color/acabado, medidas, peso, proveedor/procedencia y
+  garantía, en una tabla clara con indicador de «% completa».
+- **Ubicaciones exactas anidadas** — Armarios, archiveros, estanterías,
+  estantes, cajones, cajas, vitrinas, percheros, baúles, repisas, mesas y cajas
+  fuertes. Se gestionan por zona en `/zonas/[id]/ubicaciones` y admiten
+  jerarquía (Armario → Balda 2 → Caja de corporales). La ficha muestra la ruta
+  completa: `Armario de ornamentos → Cajón de corporales · fondo derecho`.
+- **Página de detalle de zona** (`/zonas/[id]`) — Descripción, fotografía,
+  medidas y superficie en m², árbol de ubicaciones y listado de artículos con
+  marca, modelo, descripción y medidas.
+- **Descripciones siempre visibles** — De artículos (ficha, listado y detalle
+  de zona) y de zonas (tarjeta y página de detalle).
+- **Búsqueda ampliada** — Además de nombre y código, busca por marca, modelo,
+  nº de serie, material y descripción.
+- **Exportación CSV enriquecida** — Incluye ubicación exacta, lugar exacto,
+  marca, modelo, nº de serie, material, color, medidas, peso, proveedor,
+  garantía y código de barras.
+- **Etiqueta grande** — Muestra además marca · modelo y la ubicación exacta.
+
 ## Seguridad por clave
 
 - Ventana previa en `/acceso`: una persona sin sesión no recibe páginas ni

@@ -67,6 +67,14 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                 {/* Acciones: navegan a páginas completas (sin ventanas flotantes) */}
                 <div className="absolute right-3 top-3 z-20 flex gap-2">
                   <Link
+                    href={`/zonas/${z.id}/ubicaciones`}
+                    aria-label={`Ubicaciones de ${z.name}`}
+                    title="Armarios, archiveros y cajones"
+                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-cream/95 text-ink-soft shadow-lift backdrop-blur-md transition active:scale-90 hover:text-gold-deep"
+                  >
+                    <MapPinned className="h-4 w-4" />
+                  </Link>
+                  <Link
                     href={`/zonas/${z.id}/editar`}
                     aria-label={`Editar ${z.name}`}
                     className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/40 bg-cream/95 text-ink-soft shadow-lift backdrop-blur-md transition active:scale-90 hover:text-ink"
@@ -88,11 +96,17 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                       <ZoneIcon icon={z.icon} color={z.color} size="lg" />
                     </span>
                   </div>
-                  <h3 className="mt-4 font-display text-xl font-semibold tracking-tight text-ink">
+                  <Link
+                    href={`/zonas/${z.id}`}
+                    className="mt-4 font-display text-xl font-semibold tracking-tight text-ink transition hover:text-gold-deep"
+                  >
                     {z.name}
-                  </h3>
-                  <p className="mt-1 line-clamp-2 min-h-8 text-xs leading-relaxed text-ink-soft">
-                    {z.description ?? "Sin descripción."}
+                  </Link>
+                  {/* Descripción completa de la zona, siempre visible */}
+                  <p className="mt-1 min-h-8 text-xs leading-relaxed text-ink-soft">
+                    {z.description ?? (
+                      <span className="italic text-ink-faint">Sin descripción.</span>
+                    )}
                   </p>
 
                   {dims && (
@@ -121,10 +135,10 @@ export function ZoneManager({ zones }: { zones: ZoneWithCount[] }) {
                     </p>
                     <div className="flex flex-col items-end gap-1.5">
                       <Link
-                        href={`/inventario?zona=${z.id}`}
+                        href={`/zonas/${z.id}`}
                         className="inline-flex items-center gap-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-gold-deep transition hover:text-gold"
                       >
-                        Ver
+                        Ver zona
                         <ArrowUpRight className="h-3.5 w-3.5" />
                       </Link>
                       {z.itemCount > 0 && (
