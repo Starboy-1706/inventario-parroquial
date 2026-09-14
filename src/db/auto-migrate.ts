@@ -32,10 +32,14 @@ export async function ensureDbSchema(): Promise<void> {
   ongoingMigration = (async () => {
     try {
       await withDbRetry(async (client) => {
-        // 1. Comprobación rápida: si la columna location_note y audit_sessions ya existen, listo
+        // 1. Comprobación rápida: las tablas base Y las columnas más recientes
+        //    (medidas de zonas y artículos) deben existir. Si falta cualquiera,
+        //    se ejecuta el script completo, que es idempotente (IF NOT EXISTS).
         try {
           const check = await client.query(`
             SELECT 1 FROM items, audit_sessions, app_settings LIMIT 1;
+            SELECT dim_length_cm, dim_width_cm, dim_height_cm FROM items LIMIT 0;
+            SELECT dim_length_m, dim_width_m, dim_height_m FROM zones LIMIT 0;
           `);
           if (check) {
             isSchemaVerified = true;
