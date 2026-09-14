@@ -66,7 +66,9 @@ export const ZONE_DIM_MAX_M = 999.99;
 export const itemCreateSchema = z
   .object({
     name: z.string().trim().min(1, "El nombre es obligatorio.").max(160),
-    description: nullableText(2_000),
+    // Descripción prácticamente sin límite: la columna `text` de PostgreSQL
+    // no tiene tope real; se conserva un máximo de salvaguarda anti-abuso.
+    description: nullableText(100_000),
     notes: nullableText(2_000),
     category: z.string().trim().min(1).max(120),
     zoneId: z.coerce.number().int().positive(),
@@ -104,7 +106,7 @@ export const itemUpdateSchema = z
   .object({
     version: z.coerce.number().int().positive(),
     name: z.string().trim().min(1).max(160).optional(),
-    description: nullableText(2_000).optional(),
+    description: nullableText(100_000).optional(),
     notes: nullableText(2_000).optional(),
     category: z.string().trim().min(1).max(120).optional(),
     zoneId: z.coerce.number().int().positive().optional(),
@@ -137,7 +139,7 @@ export const itemUpdateSchema = z
 
 export const zoneSchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio.").max(100),
-  description: nullableText(500),
+  description: nullableText(100_000),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   icon: z.string().trim().min(1).max(40),
   photoId: nullablePositiveId,

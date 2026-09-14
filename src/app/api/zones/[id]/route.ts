@@ -49,8 +49,11 @@ export async function PATCH(_request: NextRequest, ctx: Ctx) {
     updates.slug = slugify(name);
   }
   if (typeof body.description === "string") {
-    if (body.description.length > 500) {
-      return NextResponse.json({ error: "La descripción es demasiado larga." }, { status: 400 });
+    if (body.description.length > 100_000) {
+      return NextResponse.json(
+        { error: "La descripción supera el límite de salvaguarda (100.000 caracteres)." },
+        { status: 400 },
+      );
     }
     updates.description = body.description.trim() || null;
   }

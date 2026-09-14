@@ -197,14 +197,16 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
                 className={inputCls}
               />
             </Field>
-            <Field label="Descripción" hint="Qué se guarda o realiza en esta estancia">
+            <Field
+              label="Descripción"
+              hint={`Sin límite de caracteres${description.length ? ` · ${description.length.toLocaleString("es-ES")} escritos` : ""}`}
+            >
               <textarea
-                rows={2}
-                maxLength={500}
+                rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ej. Vasos sagrados, ornamentos y objetos de culto"
-                className={cn(inputCls, "resize-none")}
+                placeholder="Qué se guarda aquí, historia, detalles de la estancia…"
+                className={cn(inputCls, "resize-y")}
               />
             </Field>
           </div>

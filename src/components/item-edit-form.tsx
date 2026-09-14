@@ -570,15 +570,14 @@ export function ItemEditForm({
           <div className="mt-4 grid gap-4">
             <Field
               label="Descripción"
-              hint="Aparecerá en la ficha del artículo y en el listado"
+              hint="Sin límite de caracteres · se muestra completa en la ficha y el listado"
             >
               <textarea
                 name="description"
-                rows={3}
-                maxLength={2000}
+                rows={4}
                 defaultValue={item.description ?? ""}
-                placeholder="Detalles, procedencia, inscripciones…"
-                className={cn(inputCls, "resize-none")}
+                placeholder="Detalles, procedencia, inscripciones, historia…"
+                className={cn(inputCls, "resize-y")}
               />
             </Field>
             <Field label="Notas internas">

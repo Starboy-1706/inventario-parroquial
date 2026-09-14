@@ -66,8 +66,9 @@ zonas**, con **códigos únicos escaneables (QR/barras)** por artículo y un
 - **Página de detalle de zona** (`/zonas/[id]`) — Descripción, fotografía,
   medidas y superficie en m², árbol de ubicaciones y listado de artículos con
   marca, modelo, descripción y medidas.
-- **Descripciones siempre visibles** — De artículos (ficha, listado y detalle
-  de zona) y de zonas (tarjeta y página de detalle).
+- **Descripciones siempre visibles y sin límite de caracteres** — De
+  artículos (ficha, listado y detalle de zona) y de zonas (tarjeta y página de
+  detalle). Antes 500/2.000 caracteres; ahora solo una salvaguarda de 100.000.
 - **Búsqueda ampliada** — Además de nombre y código, busca por marca, modelo,
   nº de serie, material y descripción.
 - **Exportación CSV enriquecida** — Incluye ubicación exacta, lugar exacto,

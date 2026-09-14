@@ -608,13 +608,12 @@ export function ItemCreateForm({
               Descripción y notas
             </h2>
             <div className="mt-4 grid gap-4">
-              <Field label="Descripción">
+              <Field label="Descripción" hint="Sin límite de caracteres · se mostrará completa en la ficha">
                 <textarea
                   name="description"
-                  rows={2}
-                  maxLength={2000}
-                  placeholder="Detalles, procedencia, inscripciones…"
-                  className={cn(inputCls, "resize-none")}
+                  rows={4}
+                  placeholder="Detalles, procedencia, inscripciones, historia…"
+                  className={cn(inputCls, "resize-y")}
                 />
               </Field>
               <Field label="Notas internas">

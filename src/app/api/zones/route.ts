@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  if (name.length > 100 || description.length > 500) {
+  if (name.length > 100 || description.length > 100_000) {
     return NextResponse.json(
-      { error: "El nombre o la descripción son demasiado largos." },
+      { error: "El nombre no puede superar 100 caracteres (la descripción no tiene límite real)." },
       { status: 400 },
     );
   }
