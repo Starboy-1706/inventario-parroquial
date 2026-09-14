@@ -21,7 +21,7 @@ import {
   TriangleAlert,
   XCircle,
 } from "lucide-react";
-import { Button, Field, Modal, inputCls } from "@/components/ui";
+import { Button, Field, inputCls } from "@/components/ui";
 import { Scanner } from "@/components/scanner";
 import { secureFetch } from "@/lib/secure-fetch";
 import { formatDateTime, photoUrl } from "@/lib/utils";
@@ -98,9 +98,6 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
   const [scanning, setScanning] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [lastFeedback, setLastFeedback] = useState<{ message: string; type: "ok" | "warn" | "error" } | null>(null);
-  const [finalizeOpen, setFinalizeOpen] = useState(false);
-  const [autoAdjustStock, setAutoAdjustStock] = useState(true);
-  const [finalizing, setFinalizing] = useState(false);
 
   const isOngoing = data.status === "EN_CURSO";
 
@@ -157,24 +154,6 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
     }
   }
 
-  async function finalizeSession(action: "COMPLETADO" | "CANCELAR") {
-    setFinalizing(true);
-    try {
-      const res = await secureFetch(`/api/audit/${data.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, autoAdjust: autoAdjustStock }),
-      });
-      if (res.ok) {
-        setFinalizeOpen(false);
-        router.refresh();
-        await refreshSession();
-      }
-    } finally {
-      setFinalizing(false);
-    }
-  }
-
   const filteredList = data.checklist.filter((item) => {
     if (tab === "CORRECTO") return item.status === "CORRECTO";
     if (tab === "FALTANTE") return item.status === "FALTANTE";
@@ -209,10 +188,13 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
           </div>
           {isOngoing && (
             <div className="flex gap-2">
-              <Button variant="dark" onClick={() => setFinalizeOpen(true)}>
+              <Link
+                href={`/recuento/${data.id}/finalizar`}
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream transition hover:bg-ink/85"
+              >
                 <ClipboardCheck className="h-4 w-4 text-gold-soft" />
                 Finalizar recuento
-              </Button>
+              </Link>
             </div>
           )}
         </div>
@@ -509,56 +491,6 @@ export function AuditLive({ initialData }: { initialData: AuditDetail }) {
         )}
       </section>
 
-      {/* ---------- Modal Finalizar Recuento ---------- */}
-      <Modal
-        open={finalizeOpen}
-        onClose={() => setFinalizeOpen(false)}
-        title="Finalizar recuento físico"
-        subtitle={`Zona: ${data.zoneName}`}
-      >
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-line bg-white p-4 text-sm leading-relaxed">
-            <p className="font-bold text-ink">Resumen del balance:</p>
-            <ul className="mt-2 space-y-1 text-xs text-ink-soft">
-              <li>• Artículos verificados al 100%: <strong>{verifiedCount}</strong></li>
-              <li>• Artículos no encontrados (faltantes): <strong>{missingCount}</strong></li>
-              <li>• Discrepancias de cantidad / fuera de zona: <strong>{discrepanciesCount}</strong></li>
-            </ul>
-          </div>
-
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-gold/30 bg-gold/10 p-3.5">
-            <input
-              type="checkbox"
-              checked={autoAdjustStock}
-              onChange={(e) => setAutoAdjustStock(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded text-gold"
-            />
-            <span className="text-xs leading-relaxed text-ink">
-              <strong>Ajustar existencias automáticamente en el inventario</strong> con los números reales contados durante este recuento.
-            </span>
-          </label>
-
-          <div className="flex justify-end gap-2 border-t border-line-soft pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => void finalizeSession("CANCELAR")}
-              disabled={finalizing}
-            >
-              Cancelar sesión
-            </Button>
-            <Button
-              type="button"
-              variant="dark"
-              onClick={() => void finalizeSession("COMPLETADO")}
-              disabled={finalizing}
-            >
-              {finalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
-              Guardar y cerrar informe
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

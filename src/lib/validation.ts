@@ -54,6 +54,15 @@ const moneyField = z.unknown().transform((value, ctx) => {
   return parsed;
 });
 
+/** Medida física opcional (cm para artículos, m para zonas). Vacío → null. */
+const dimField = (max: number) =>
+  z
+    .union([z.coerce.number().min(0).max(max), z.literal(""), z.null(), z.undefined()])
+    .transform((v) => (typeof v === "number" && Number.isFinite(v) ? v : null));
+
+export const ITEM_DIM_MAX_CM = 99_999.9;
+export const ZONE_DIM_MAX_M = 999.99;
+
 export const itemCreateSchema = z
   .object({
     name: z.string().trim().min(1, "El nombre es obligatorio.").max(160),
@@ -73,6 +82,9 @@ export const itemCreateSchema = z
     acquisitionDate: dateField,
     estimatedValue: moneyField,
     externalBarcode: nullableText(128),
+    dimLengthCm: dimField(ITEM_DIM_MAX_CM),
+    dimWidthCm: dimField(ITEM_DIM_MAX_CM),
+    dimHeightCm: dimField(ITEM_DIM_MAX_CM),
   })
   .transform((data) => ({
     ...data,
@@ -100,6 +112,9 @@ export const itemUpdateSchema = z
     acquisitionDate: dateField.optional(),
     estimatedValue: moneyField.optional(),
     externalBarcode: nullableText(128).optional(),
+    dimLengthCm: dimField(ITEM_DIM_MAX_CM).optional(),
+    dimWidthCm: dimField(ITEM_DIM_MAX_CM).optional(),
+    dimHeightCm: dimField(ITEM_DIM_MAX_CM).optional(),
     deletedReason: nullableText(500).optional(),
   })
   .strict();
@@ -110,6 +125,9 @@ export const zoneSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   icon: z.string().trim().min(1).max(40),
   photoId: nullablePositiveId,
+  dimLengthM: dimField(ZONE_DIM_MAX_M),
+  dimWidthM: dimField(ZONE_DIM_MAX_M),
+  dimHeightM: dimField(ZONE_DIM_MAX_M),
 });
 
 export function zodErrorMessage(error: z.ZodError) {

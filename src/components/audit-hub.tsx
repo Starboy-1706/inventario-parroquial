@@ -1,24 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CheckCircle2,
   ClipboardCheck,
-  Clock,
-  Loader2,
-  MapPinned,
   Play,
-  Plus,
-  Sparkles,
   TriangleAlert,
   XCircle,
 } from "lucide-react";
 import type { AuditSession, Zone } from "@/db/schema";
-import { Button, Field, Modal, ZoneIcon, inputCls } from "@/components/ui";
-import { secureFetch } from "@/lib/secure-fetch";
 import { formatDateTime } from "@/lib/utils";
 
 type SessionWithZone = AuditSession & { zoneName: string; zoneColor: string };
@@ -30,39 +21,7 @@ export function AuditHub({
   sessions: SessionWithZone[];
   zones: Zone[];
 }) {
-  const router = useRouter();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [zoneId, setZoneId] = useState(zones[0]?.id ?? 0);
-  const [auditorName, setAuditorName] = useState("");
-  const [notes, setNotes] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function startSession(e: React.FormEvent) {
-    e.preventDefault();
-    if (!zoneId) return;
-    setPending(true);
-    setError(null);
-    try {
-      const res = await secureFetch("/api/audit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ zoneId, auditorName, notes }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "No se pudo iniciar la sesión de recuento.");
-        return;
-      }
-      setModalOpen(false);
-      router.push(`/recuento/${data.id}`);
-    } catch {
-      setError("Error de conexión al iniciar el recuento.");
-    } finally {
-      setPending(false);
-    }
-  }
-
+  void zones;
   const ongoing = sessions.filter((s) => s.status === "EN_CURSO");
   const completed = sessions.filter((s) => s.status !== "EN_CURSO");
 
@@ -84,18 +43,13 @@ export function AuditHub({
               el informe de diferencias automáticamente.
             </p>
           </div>
-          <Button
-            variant="dark"
-            className="w-full sm:w-auto"
-            onClick={() => {
-              setZoneId(zones[0]?.id ?? 0);
-              setError(null);
-              setModalOpen(true);
-            }}
+          <Link
+            href="/recuento/nueva"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream transition hover:bg-ink/85 sm:w-auto"
           >
             <Play className="h-4 w-4 text-gold-soft" />
             Iniciar nuevo recuento
-          </Button>
+          </Link>
         </div>
       </header>
 
@@ -229,72 +183,6 @@ export function AuditHub({
         )}
       </section>
 
-      {/* ---------- Modal Iniciar Recuento ---------- */}
-      <Modal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Iniciar recuento en una zona"
-        subtitle="Elige la ubicación que vas a recorrer con el móvil"
-      >
-        <form onSubmit={startSession} className="space-y-4">
-          <Field label="Zona a auditar">
-            <select
-              value={zoneId}
-              onChange={(e) => setZoneId(Number(e.target.value))}
-              className={inputCls}
-            >
-              {zones.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Nombre del responsable (auditor)">
-            <input
-              value={auditorName}
-              onChange={(e) => setAuditorName(e.target.value)}
-              placeholder="Ej. Juan Pérez (Sacristán)"
-              className={inputCls}
-            />
-          </Field>
-
-          <Field label="Notas iniciales (opcional)">
-            <input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ej. Recuento anual de Pascua"
-              className={inputCls}
-            />
-          </Field>
-
-          {error && (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-medium text-red-700">
-              {error}
-            </p>
-          )}
-
-          <div className="flex justify-end gap-2 border-t border-line-soft pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setModalOpen(false)}
-              disabled={pending}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" variant="dark" disabled={pending || !zoneId}>
-              {pending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-              Comenzar a escanear
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

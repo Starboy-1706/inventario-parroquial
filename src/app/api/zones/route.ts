@@ -77,10 +77,37 @@ export async function POST(request: NextRequest) {
     photoId = pid;
   }
 
+  // Medidas del área en metros (opcionales, hasta 999,99 m con 2 decimales).
+  const parseDimM = (value: unknown): number | null | undefined => {
+    if (value === undefined || value === null || value === "") return null;
+    const n = Number(String(value).replace(",", "."));
+    if (!Number.isFinite(n) || n < 0 || n > 999.99) return undefined;
+    return Math.round(n * 100) / 100;
+  };
+  const dimLengthM = parseDimM(body.dimLengthM);
+  const dimWidthM = parseDimM(body.dimWidthM);
+  const dimHeightM = parseDimM(body.dimHeightM);
+  if (dimLengthM === undefined || dimWidthM === undefined || dimHeightM === undefined) {
+    return NextResponse.json(
+      { error: "Las medidas deben ser números entre 0 y 999,99 metros." },
+      { status: 400 },
+    );
+  }
+
   try {
     const [created] = await db
       .insert(zones)
-      .values({ name, slug, description: description || null, color, icon, photoId })
+      .values({
+        name,
+        slug,
+        description: description || null,
+        color,
+        icon,
+        photoId,
+        dimLengthM: dimLengthM === null ? null : String(dimLengthM),
+        dimWidthM: dimWidthM === null ? null : String(dimWidthM),
+        dimHeightM: dimHeightM === null ? null : String(dimHeightM),
+      })
       .returning();
     return NextResponse.json(created, { status: 201 });
   } catch (error: unknown) {

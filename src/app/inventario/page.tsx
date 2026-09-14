@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { InventoryToolbar } from "@/components/inventory-toolbar";
 import { PhotoFrame } from "@/components/photo-frame";
 import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
-import { cn, photoUrl } from "@/lib/utils";
+import { cn, formatItemDimensions, photoUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export async function generateMetadata() { return authPageMetadata("Inventario"); }
@@ -129,6 +129,18 @@ export default async function InventarioPage({ searchParams }: { searchParams: S
                       <p className="mt-0.5 line-clamp-1 text-[0.68rem] text-ink-soft sm:mt-1 sm:text-xs">
                         {it.category}
                       </p>
+
+                      {/* Descripción del objeto visible en el listado */}
+                      {it.description && (
+                        <p className="mt-1 line-clamp-2 text-[0.7rem] leading-snug text-ink-soft/90 sm:text-[0.78rem]">
+                          {it.description}
+                        </p>
+                      )}
+                      {formatItemDimensions(it) && (
+                        <p className="mt-1 font-mono text-[0.62rem] font-semibold text-gold-deep">
+                          {formatItemDimensions(it)}
+                        </p>
+                      )}
 
                       <div className="mt-4 hidden flex-wrap items-center gap-1.5 sm:flex">
                         <TypeBadge type={it.itemType} />

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive,
   Armchair,
@@ -13,7 +12,6 @@ import {
   Utensils,
   Users,
   Warehouse,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -163,73 +161,6 @@ export function ZoneIcon({
         strokeWidth={1.8}
       />
     </span>
-  );
-}
-
-/* ------------------------------ Modal ------------------------------ */
-
-export function Modal({
-  open,
-  onClose,
-  title,
-  subtitle,
-  children,
-  wide,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  subtitle?: string;
-  children: ReactNode;
-  wide?: boolean;
-}) {
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div
-            className="absolute inset-0 bg-ink/50 backdrop-blur-[2px]"
-            onClick={onClose}
-          />
-          <motion.div
-            role="dialog"
-            aria-modal
-            className={cn(
-              "relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-line bg-cream shadow-lift sm:rounded-3xl",
-              wide ? "sm:max-w-2xl" : "sm:max-w-lg",
-            )}
-            initial={{ y: 60, opacity: 0, scale: 0.98 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 40, opacity: 0, scale: 0.98 }}
-            transition={{ type: "spring", damping: 28, stiffness: 320 }}
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-line-soft px-6 py-5">
-              <div>
-                <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
-                  {title}
-                </h2>
-                {subtitle && (
-                  <p className="mt-0.5 text-xs text-ink-soft">{subtitle}</p>
-                )}
-              </div>
-              <button
-                onClick={onClose}
-                aria-label="Cerrar"
-                className="cursor-pointer rounded-full p-2 text-ink-soft transition hover:bg-ink/5 hover:text-ink"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
-            </div>
-            <div className="overflow-y-auto px-6 py-5">{children}</div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
   );
 }
 

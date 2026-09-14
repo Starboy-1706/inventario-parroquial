@@ -61,6 +61,25 @@ export async function PATCH(_request: NextRequest, ctx: Ctx) {
     updates.icon = body.icon;
   }
 
+  // Medidas del área en metros: null las borra, número las actualiza, ausencia no toca.
+  for (const key of ["dimLengthM", "dimWidthM", "dimHeightM"] as const) {
+    if (key in body) {
+      const value = (body as Record<string, unknown>)[key];
+      if (value === null || value === "") {
+        updates[key] = null;
+      } else {
+        const n = Number(String(value).replace(",", "."));
+        if (!Number.isFinite(n) || n < 0 || n > 999.99) {
+          return NextResponse.json(
+            { error: "Las medidas deben ser números entre 0 y 999,99 metros." },
+            { status: 400 },
+          );
+        }
+        updates[key] = (Math.round(n * 100) / 100).toFixed(2);
+      }
+    }
+  }
+
   // photoId: null → quitar foto · number → asignar foto existente
   if ("photoId" in body) {
     if (body.photoId === null) {

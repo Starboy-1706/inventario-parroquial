@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { asc, eq, desc, and, isNull } from "drizzle-orm";
-import { ArrowLeft, Calendar, Coins, Layers, MapPin, ScrollText, Tag } from "lucide-react";
+import { ArrowLeft, Calendar, Coins, Layers, MapPin, Ruler, ScrollText, Tag } from "lucide-react";
 import { db } from "@/db";
 import { itemPhotos, items, loans, maintenanceRecords, movements, storageLocations, zones } from "@/db/schema";
 import {
@@ -18,7 +18,7 @@ import { ItemCarePanel } from "@/components/item-care-panel";
 import { PhotoFrame } from "@/components/photo-frame";
 import { MOVEMENT_LABELS, type MovementType } from "@/lib/constants";
 import { authPageMetadata, requireAuthenticated } from "@/lib/auth";
-import { cn, formatDate, formatDateTime, formatMoney, photoUrl } from "@/lib/utils";
+import { cn, formatDate, formatDateTime, formatItemDimensions, formatMoney, formatZoneDimensions, photoUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +61,9 @@ export default async function ItemDetailPage({ params }: Props) {
       ? [item.photoId]
       : [];
 
+  const itemDims = formatItemDimensions(item);
+  const zoneDims = formatZoneDimensions(zone);
+
   const meta = [
     { icon: Tag, label: "Categoría", value: item.category },
     {
@@ -72,6 +75,11 @@ export default async function ItemDetailPage({ params }: Props) {
         if (item.locationNote) parts.push(`Lugar exacto: ${item.locationNote}`);
         return parts.join(" · ");
       })(),
+    },
+    {
+      icon: Ruler,
+      label: "Medidas (cm)",
+      value: itemDims ?? "Sin registrar",
     },
     {
       icon: Calendar,
@@ -113,10 +121,16 @@ export default async function ItemDetailPage({ params }: Props) {
         <h1 className="mt-3 max-w-3xl font-display text-2xl font-semibold leading-[1.12] tracking-tight text-ink sm:mt-4 sm:text-4xl lg:text-5xl">
           {item.name}
         </h1>
+        {/* Descripción del objeto: siempre visible cuando existe */}
         {item.description && (
-          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-ink-soft sm:mt-3 sm:text-[0.95rem]">
-            {item.description}
-          </p>
+          <div className="mt-3 max-w-3xl rounded-2xl border border-line bg-cream/80 px-4 py-3 sm:mt-4">
+            <p className="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-gold-deep">
+              Descripción
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-ink sm:text-[0.95rem]">
+              {item.description}
+            </p>
+          </div>
         )}
       </header>
 
@@ -132,6 +146,12 @@ export default async function ItemDetailPage({ params }: Props) {
               <div>
                 <p className="text-sm font-bold text-ink">{zone.name}</p>
                 <p className="text-xs text-ink-soft">{zone.description}</p>
+                {zoneDims && (
+                  <p className="mt-0.5 flex items-center gap-1 text-[0.68rem] font-semibold text-gold-deep">
+                    <Ruler className="h-3 w-3" />
+                    Área: {zoneDims}
+                  </p>
+                )}
               </div>
             </div>
             <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-line-soft pt-5 sm:grid-cols-3">
@@ -222,7 +242,7 @@ export default async function ItemDetailPage({ params }: Props) {
           </section>
 
           <div className="lg:hidden">
-            <QrLabel itemId={item.id} code={item.code} />
+            <QrLabel itemId={item.id} code={item.code} zoneName={zone.name} zoneColor={zone.color} countableQuantity={item.itemType === "CONTABLE" ? item.quantity : undefined} />
           </div>
         </div>
 
@@ -255,7 +275,7 @@ export default async function ItemDetailPage({ params }: Props) {
             </section>
           )}
           <div className="order-3 hidden animate-fade-up lg:order-2 lg:block" style={{ animationDelay: "140ms" }}>
-            <QrLabel itemId={item.id} code={item.code} />
+            <QrLabel itemId={item.id} code={item.code} zoneName={zone.name} zoneColor={zone.color} countableQuantity={item.itemType === "CONTABLE" ? item.quantity : undefined} />
           </div>
           <div className="order-2 animate-fade-up lg:order-3" style={{ animationDelay: "220ms" }}>
             <ItemActions item={item} zones={allZones} />

@@ -19,7 +19,9 @@ export async function proxy(request: NextRequest) {
   const isPublic =
     PUBLIC_PATHS.has(pathname) ||
     pathname === "/manifest.json" ||
-    pathname.startsWith("/icons/");
+    pathname.startsWith("/icons/") ||
+    // Descargas públicas (parches y documentos generados por la propia app)
+    pathname.startsWith("/downloads/");
   const validSession =
     verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value) !== null;
 

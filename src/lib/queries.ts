@@ -23,6 +23,9 @@ export type ZoneWithCount = {
   color: string;
   icon: string;
   photoId: number | null;
+  dimLengthM: string | null;
+  dimWidthM: string | null;
+  dimHeightM: string | null;
   itemCount: number;
   trashCount: number;
   totalCount: number;
@@ -40,6 +43,9 @@ export async function getZonesWithCounts(): Promise<ZoneWithCount[]> {
       color: zones.color,
       icon: zones.icon,
       photoId: zones.photoId,
+      dimLengthM: zones.dimLengthM,
+      dimWidthM: zones.dimWidthM,
+      dimHeightM: zones.dimHeightM,
       itemCount: sql<number>`count(${items.id}) filter (where ${items.deletedAt} is null)::int`,
       trashCount: sql<number>`count(${items.id}) filter (where ${items.deletedAt} is not null)::int`,
       totalCount: sql<number>`count(${items.id})::int`,

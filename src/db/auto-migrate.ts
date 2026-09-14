@@ -79,8 +79,15 @@ export async function ensureDbSchema(): Promise<void> {
           );
           CREATE INDEX IF NOT EXISTS storage_locations_zone_idx ON storage_locations(zone_id);
 
+          ALTER TABLE zones ADD COLUMN IF NOT EXISTS dim_length_m numeric(8,2);
+          ALTER TABLE zones ADD COLUMN IF NOT EXISTS dim_width_m numeric(8,2);
+          ALTER TABLE zones ADD COLUMN IF NOT EXISTS dim_height_m numeric(8,2);
+
           ALTER TABLE items ADD COLUMN IF NOT EXISTS inventory_number integer;
           ALTER TABLE items ADD COLUMN IF NOT EXISTS external_barcode text;
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS dim_length_cm numeric(10,1);
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS dim_width_cm numeric(10,1);
+          ALTER TABLE items ADD COLUMN IF NOT EXISTS dim_height_cm numeric(10,1);
           ALTER TABLE items ADD COLUMN IF NOT EXISTS location_id integer REFERENCES storage_locations(id) ON DELETE SET NULL;
           ALTER TABLE items ADD COLUMN IF NOT EXISTS location_note text;
           ALTER TABLE items ADD COLUMN IF NOT EXISTS version integer NOT NULL DEFAULT 1;

@@ -3,46 +3,33 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Check,
-  Loader2,
-  MapPinPlus,
-  Ruler,
-  Sparkles,
-  TriangleAlert,
-} from "lucide-react";
+import { ArrowLeft, Loader2, Ruler, Save, TriangleAlert } from "lucide-react";
 import type { Zone } from "@/db/schema";
 import { ZONE_COLORS, ZONE_ICONS } from "@/lib/constants";
-import { Button, Field, inputCls } from "@/components/ui";
-import { ZoneIcon } from "@/components/ui";
+import { Button, Field, inputCls, ZoneIcon } from "@/components/ui";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { secureFetch } from "@/lib/secure-fetch";
 import { cn } from "@/lib/utils";
 
-export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
+/** Edición de zona a página completa (sin ventanas flotantes). */
+export function ZoneEditForm({ zone }: { zone: Zone }) {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [color, setColor] = useState<string>(ZONE_COLORS[0]);
-  const [icon, setIcon] = useState<string>("church");
-  const [photoId, setPhotoId] = useState<number | null>(null);
-  const [dimLength, setDimLength] = useState("");
-  const [dimWidth, setDimWidth] = useState("");
-  const [dimHeight, setDimHeight] = useState("");
+  const [name, setName] = useState(zone.name);
+  const [description, setDescription] = useState(zone.description ?? "");
+  const [color, setColor] = useState<string>(zone.color);
+  const [icon, setIcon] = useState<string>(zone.icon);
+  const [photoId, setPhotoId] = useState<number | null>(zone.photoId);
+  const [dimLength, setDimLength] = useState(zone.dimLengthM ?? "");
+  const [dimWidth, setDimWidth] = useState(zone.dimWidthM ?? "");
+  const [dimHeight, setDimHeight] = useState(zone.dimHeightM ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<Zone | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError("Escribe el nombre de la zona (ej. Sacristía, Despacho Parroquial).");
-      return;
-    }
-    if (existingZones.some((z) => z.name.toLowerCase() === trimmedName.toLowerCase())) {
-      setError("Ya existe una zona con ese nombre.");
+      setError("Escribe el nombre de la zona.");
       return;
     }
     const parseDimM = (raw: string): { ok: boolean; value: number | null } => {
@@ -62,8 +49,8 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
     setPending(true);
     setError(null);
     try {
-      const res = await secureFetch("/api/zones", {
-        method: "POST",
+      const res = await secureFetch(`/api/zones/${zone.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: trimmedName,
@@ -76,73 +63,24 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
           dimHeightM: hei.value,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "No se pudo crear la zona.");
+        setError(data.error ?? "No se pudo guardar la zona.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      setCreated(data);
       router.refresh();
+      router.push("/zonas");
     } catch {
       setError("Error de conexión. Inténtalo de nuevo.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setPending(false);
     }
   }
 
-  /* ---------- Pantalla de éxito ---------- */
-  if (created) {
-    return (
-      <div className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
-        <div className="animate-fade-up rounded-3xl border border-emerald-200 bg-emerald-50/60 p-8 text-center shadow-card sm:p-10">
-          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-            <Sparkles className="h-7 w-7" />
-          </span>
-          <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-ink">
-            ¡Zona creada!
-          </h1>
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <ZoneIcon icon={created.icon} color={created.color} size="lg" />
-            <span className="font-display text-2xl font-semibold text-ink">{created.name}</span>
-          </div>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-ink-soft">
-            Ya puedes dar de alta artículos en esta estancia y asignarles su
-            código permanente PSB.
-          </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-2.5">
-            <Button variant="dark" onClick={() => router.push(`/inventario/nuevo?zona=${created.id}`)}>
-              <MapPinPlus className="h-4 w-4" />
-              Añadir artículo en esta zona
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => {
-                setName("");
-                setDescription("");
-                setColor(ZONE_COLORS[0]);
-                setIcon("church");
-                setPhotoId(null);
-                setDimLength("");
-                setDimWidth("");
-                setDimHeight("");
-                setCreated(null);
-                setError(null);
-              }}
-            >
-              Crear otra zona
-            </Button>
-            <Button variant="outline" onClick={() => router.push("/zonas")}>
-              Ver todas las zonas
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ---------- Formulario ---------- */
   return (
-    <div className="mx-auto max-w-3xl px-4 py-5 sm:px-8 lg:py-12 pb-32 sm:pb-12">
+    <div className="mx-auto max-w-3xl px-4 py-5 pb-32 sm:px-8 sm:pb-12 lg:py-12">
       <Link
         href="/zonas"
         className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-ink-soft transition hover:text-ink active:scale-95"
@@ -153,15 +91,11 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
 
       <header className="mt-4 animate-fade-up">
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
-          Parroquia Santa Bárbara
+          Ubicación física de la parroquia
         </p>
-        <h1 className="mt-1.5 font-display text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-ink">
-          Nueva zona
+        <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-ink sm:text-4xl lg:text-5xl">
+          Editar {zone.name}
         </h1>
-        <p className="mt-1.5 max-w-xl text-xs sm:text-sm leading-relaxed text-ink-soft">
-          Crea una estancia o ubicación física de la parroquia para clasificar
-          su contenido (ej. Sacristía, Despacho, Salón Parroquial…).
-        </p>
       </header>
 
       {error && (
@@ -189,7 +123,6 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
             <Field label="Nombre de la zona">
               <input
                 required
-                autoFocus
                 maxLength={100}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -217,8 +150,8 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
             Medidas del área (metros)
           </h2>
           <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
-            Largo × ancho (× alto) de la estancia. Opcional: con largo y ancho se
-            calcula automáticamente la superficie en m².
+            Largo × ancho (× alto) de la estancia. Con largo y ancho se calcula
+            automáticamente la superficie en m².
           </p>
           <div className="mt-4 grid grid-cols-3 gap-3 sm:gap-4">
             <Field label="Largo (m)">
@@ -297,7 +230,6 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
             </Field>
           </div>
 
-          {/* Vista previa en vivo */}
           <div className="mt-5 flex items-center gap-3 rounded-2xl border border-line bg-white/60 p-3">
             <ZoneIcon icon={icon} color={color} size="lg" />
             <div>
@@ -313,15 +245,12 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
           <h2 className="text-[0.66rem] font-bold uppercase tracking-[0.2em] text-gold-deep">
             Fotografía de la estancia
           </h2>
-          <p className="mt-1 text-xs text-ink-soft">
-            Una vista del espacio ayuda a reconocerlo al inventariar.
-          </p>
           <div className="mt-4">
             <PhotoUploader value={photoId} onChange={setPhotoId} />
           </div>
         </section>
 
-        {/* Barra de acción móvil */}
+        {/* Barra de acción */}
         <div
           className="fixed inset-x-0 z-[45] flex items-center justify-between gap-3 border-t border-line bg-cream/95 px-4 py-3 shadow-[0_-8px_24px_rgba(33,28,18,.10)] backdrop-blur-xl sm:static sm:z-auto sm:border-t sm:border-line-soft sm:bg-transparent sm:p-0 sm:pt-4 sm:shadow-none"
           style={{ bottom: "calc(4.35rem + env(safe-area-inset-bottom))" }}
@@ -332,9 +261,9 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
           >
             Cancelar
           </Link>
-          <Button type="submit" variant="dark" disabled={pending} className="flex-1 sm:flex-initial py-3 sm:py-2.5 shadow-lift">
-            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 text-gold-soft" />}
-            {pending ? "Creando…" : "Crear zona"}
+          <Button type="submit" variant="dark" disabled={pending} className="flex-1 py-3 shadow-lift sm:flex-initial sm:py-2.5">
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 text-gold-soft" />}
+            {pending ? "Guardando…" : "Guardar cambios"}
           </Button>
         </div>
       </form>

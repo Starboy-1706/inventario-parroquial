@@ -144,6 +144,24 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           : data.estimatedValue.toFixed(2),
     externalBarcode:
       data.externalBarcode === undefined ? current.externalBarcode : data.externalBarcode,
+    dimLengthCm:
+      data.dimLengthCm === undefined
+        ? current.dimLengthCm
+        : data.dimLengthCm === null
+          ? null
+          : String(data.dimLengthCm),
+    dimWidthCm:
+      data.dimWidthCm === undefined
+        ? current.dimWidthCm
+        : data.dimWidthCm === null
+          ? null
+          : String(data.dimWidthCm),
+    dimHeightCm:
+      data.dimHeightCm === undefined
+        ? current.dimHeightCm
+        : data.dimHeightCm === null
+          ? null
+          : String(data.dimHeightCm),
   };
   const labels: Record<keyof typeof candidate, string> = {
     name: "nombre",
@@ -162,6 +180,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     acquisitionDate: "fecha de adquisición",
     estimatedValue: "valor",
     externalBarcode: "código comercial",
+    dimLengthCm: "largo",
+    dimWidthCm: "ancho",
+    dimHeightCm: "alto",
   };
   for (const key of Object.keys(candidate) as (keyof typeof candidate)[]) {
     if (comparable(candidate[key]) !== comparable(current[key])) changes.push(labels[key]);

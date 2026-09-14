@@ -30,36 +30,42 @@ const ZONES = [
     description: "Vasos sagrados, ornamentos y objetos de culto",
     color: "#A67C2D",
     icon: "church",
+    dims: [8, 5, 3.2],
   },
   {
     name: "Presbiterio y Altar",
     description: "Enseres del altar mayor y el presbiterio",
     color: "#2E4B3A",
     icon: "lamp",
+    dims: [12, 7, 9],
   },
   {
     name: "Despacho Parroquial",
     description: "Archivo, documentación y material de oficina",
     color: "#3E5C76",
     icon: "archive",
+    dims: [6, 4, 2.8],
   },
   {
     name: "Salón Parroquial",
     description: "Mobiliario y equipamiento para catequesis y reuniones",
     color: "#B0653A",
     icon: "users",
+    dims: [15, 9, 3.5],
   },
   {
     name: "Almacén",
     description: "Consumibles, limpieza y reservas",
     color: "#8A6D3B",
     icon: "warehouse",
+    dims: [7, 4, 2.6],
   },
   {
     name: "Coro",
     description: "Instrumentos y material musical",
     color: "#6B4E9B",
     icon: "music",
+    dims: [10, 6, 8],
   },
 ];
 
@@ -93,6 +99,26 @@ const ITEMS = [
   ["Atriles para partituras", "Coro", "CONTABLE", 11, 8, "DISPONIBLE", "BUENO", "Mobiliario", 165, "Atriles plegables negros con funda."],
 ];
 
+// Medidas de ejemplo en centímetros: [largo, ancho, alto]
+const ITEM_DIMS_CM = {
+  "Cáliz de plata dorada (s. XIX)": [22, 12, 12],
+  "Custodia barroca de altar": [58, 20, 20],
+  "Copón de plata con tapa": [18, 10, 10],
+  "Crucifijo de altar mayor": [45, 18, 8],
+  "Candeleros de altar (juego de 6)": [40, 14, 14],
+  "Velas de altar (unidades)": [60, 4, 4],
+  "Portátil HP ProBook (secretaría)": [36, 24.5, 2],
+  "Mesas plegables de resina": [180, 74, 74],
+  "Sillas apilables": [86, 50, 48],
+  "Proyector Epson + pantalla": [30, 24, 10],
+  "Cafetera industrial 60 tazas": [45, 35, 35],
+  "Cajas de hostias (cajas de 500)": [25, 18, 8],
+  "Vino de misa (botellas)": [30, 8, 8],
+  "Teclado digital Yamaha P-125": [132, 29, 16],
+  "Atriles para partituras": [100, 45, 5],
+  "Libro de Bautismos · Tomo VII": [35, 26, 7],
+};
+
 const EXTRA_MOVEMENTS = [
   ["Vinajeras de cristal con bandeja", "ESTADO", 0, "DISPONIBLE → DISPONIBLE · Revisión pascual"],
   ["Velas de altar (unidades)", "SALIDA", 6, "-6 uds · Semana Santa"],
@@ -116,8 +142,8 @@ async function main() {
     const zoneIds = {};
     for (const z of ZONES) {
       const { rows } = await client.query(
-        `INSERT INTO zones (name, slug, description, color, icon) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-        [z.name, slugify(z.name), z.description, z.color, z.icon],
+        `INSERT INTO zones (name, slug, description, color, icon, dim_length_m, dim_width_m, dim_height_m) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+        [z.name, slugify(z.name), z.description, z.color, z.icon, z.dims?.[0] ?? null, z.dims?.[1] ?? null, z.dims?.[2] ?? null],
       );
       zoneIds[z.name] = rows[0].id;
     }
@@ -135,6 +161,10 @@ async function main() {
       const id = rows[0].id;
       const code = `${p}-${String(id).padStart(4, "0")}`;
       await client.query(`UPDATE items SET code = $1 WHERE id = $2`, [code, id]);
+      const dcm = ITEM_DIMS_CM[name];
+      if (dcm) {
+        await client.query(`UPDATE items SET dim_length_cm = $2, dim_width_cm = $3, dim_height_cm = $4 WHERE id = $1`, [id, dcm[0], dcm[1], dcm[2]]);
+      }
       await client.query(
         `INSERT INTO movements (item_id, type, quantity, note, created_at) VALUES ($1,'ALTA',$2,$3, now() - ($4 || ' days')::interval)`,
         [id, qty, `Alta en el inventario · Zona: ${zone}`, String(200 - i * 7)],

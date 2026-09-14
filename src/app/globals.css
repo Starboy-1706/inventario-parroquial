@@ -229,16 +229,32 @@ body::before {
   }
 }
 
-/* ---------- Hoja de etiquetas A4 (/inventario/[id]/etiqueta) ---------- */
+/* ---------- Hojas de etiquetas en tamaño CARTA (216 × 279 mm) ---------- */
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 8mm;
+    size: letter portrait;
+    margin: 10mm;
+  }
+  html,
+  body {
+    width: 215.9mm;
   }
   .sheet-screen-only {
     display: none !important;
   }
   .sheet-shadow {
     box-shadow: none !important;
+  }
+  .sheet-page {
+    break-after: page;
+    page-break-after: always;
+  }
+  .sheet-page:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
+  }
+  .label-cell {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

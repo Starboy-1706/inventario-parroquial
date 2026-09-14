@@ -30,6 +30,29 @@ zonas**, con **códigos únicos escaneables (QR/barras)** por artículo y un
   ajuste, traslado, cambio de estado) queda registrada con fecha y nota, en
   **transacciones ACID**.
 
+## Novedades de esta versión
+
+- **Sin ventanas flotantes** — Todos los formularios y confirmaciones (alta y
+  edición de artículos y zonas, eliminación, restauración desde la papelera,
+  inicio y cierre de recuentos) se han convertido en **páginas completas** con
+  su propia URL: `/inventario/[id]/editar`, `/inventario/[id]/eliminar`,
+  `/zonas/[id]/editar`, `/zonas/[id]/eliminar`, `/recuento/nueva`,
+  `/recuento/[id]/finalizar`, `/inventario/[id]/restaurar`,
+  `/inventario/[id]/borrar`. Navegación con botón atrás del navegador garantizada.
+- **Descripción siempre visible** — La descripción del objeto aparece destacada
+  en la ficha y también en el listado del inventario.
+- **Medidas configurables** — Zonas: largo × ancho (× alto) en **metros** (con
+  cálculo automático de m²). Artículos: largo × ancho × alto en **centímetros**.
+  Se muestran en tarjetas, fichas y etiquetas grandes.
+- **Impresión en tamaño carta** — Todas las hojas de etiquetas usan papel
+  **carta (216 × 279 mm)** con márgenes de 10 mm y guías de corte.
+- **La zona en cada etiqueta** — Toda etiqueta impresa lleva una pastilla de
+  color con el **nombre de la zona** a la que pertenece el artículo.
+- **Etiquetas numeradas por unidad** — Los artículos **acumulables** imprimen
+  automáticamente tantas etiquetas como unidades existan, numeradas
+  «Ejemplar 1 de N … N de N», en la ficha individual, por zona y por lote
+  (límite de seguridad: 300 por artículo).
+
 ## Seguridad por clave
 
 - Ventana previa en `/acceso`: una persona sin sesión no recibe páginas ni

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, QrCode } from "lucide-react";
+import { ArrowLeft, Printer, QrCode, Ruler } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { chunkPages, expandLabelUnits, type LabelUnit } from "@/lib/labels";
 
 interface ZoneLabelItem {
   id: number;
@@ -13,11 +14,136 @@ interface ZoneLabelItem {
   itemType: string;
 }
 
+/* ---------- Diseños en tamaño CARTA (216 × 279 mm, márgenes 10 mm) ---------- */
 const LAYOUTS = [
-  { cols: 3, perPage: 24, qr: 72, codeSize: 11, nameSize: 8, label: "24 pequeñas" },
-  { cols: 3, perPage: 15, qr: 90, codeSize: 13, nameSize: 9, label: "15 medianas" },
-  { cols: 2, perPage: 8, qr: 110, codeSize: 16, nameSize: 11, label: "8 grandes" },
+  { cols: 3, rows: 7, perPage: 21, qr: 52, codeSize: 10, nameSize: 8, label: "21 pequeñas" },
+  { cols: 3, rows: 4, perPage: 12, qr: 76, codeSize: 12.5, nameSize: 9, label: "12 medianas" },
+  { cols: 2, rows: 3, perPage: 6, qr: 100, codeSize: 16, nameSize: 11, label: "6 grandes" },
 ] as const;
+
+function ZoneLabel({
+  unit,
+  baseUrl,
+  parishName,
+  zoneName,
+  zoneColor,
+  layout,
+}: {
+  unit: LabelUnit;
+  baseUrl: string;
+  parishName: string;
+  zoneName: string;
+  zoneColor: string;
+  layout: (typeof LAYOUTS)[number];
+}) {
+  const big = layout.perPage === 6;
+  return (
+    <div
+      className="label-cell"
+      style={{
+        border: "1.5px dashed #9ca3af",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: big ? "2.2mm" : "1.4mm",
+        padding: big ? "3mm" : "1.8mm",
+        textAlign: "center",
+        fontFamily: "Georgia, 'Times New Roman', serif",
+        background: "#ffffff",
+        overflow: "hidden",
+        boxSizing: "border-box",
+        height: "100%",
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          fontSize: big ? 9 : 7,
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          color: "#6b7280",
+        }}
+      >
+        {parishName}
+      </p>
+
+      {/* Nombre de la zona — impreso dentro de cada etiqueta */}
+      <p
+        style={{
+          margin: 0,
+          fontSize: big ? 10 : 7.5,
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: 1,
+          color: "#ffffff",
+          background: zoneColor || "#211c12",
+          padding: big ? "1.2mm 3.5mm" : "0.7mm 2.4mm",
+          borderRadius: 999,
+          maxWidth: "100%",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {zoneName}
+      </p>
+
+      <QRCodeSVG
+        value={`${baseUrl}/escaner?code=${unit.code}`}
+        size={layout.qr}
+        level="M"
+        fgColor="#000000"
+        bgColor="#ffffff"
+      />
+      <p
+        className="font-mono"
+        style={{
+          margin: 0,
+          fontWeight: 700,
+          fontSize: `${layout.codeSize}px`,
+          letterSpacing: 2,
+        }}
+      >
+        {unit.code}
+      </p>
+      <p
+        style={{
+          margin: 0,
+          fontSize: `${layout.nameSize}px`,
+          fontWeight: 600,
+          lineHeight: 1.18,
+          overflow: "hidden",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+        }}
+      >
+        {unit.name}
+      </p>
+
+      {/* Numeración: etiqueta por unidad existente */}
+      {unit.unit !== null && unit.unitTotal !== null && (
+        <p
+          style={{
+            margin: 0,
+            fontSize: big ? 10 : 7.5,
+            fontWeight: 800,
+            letterSpacing: 1.2,
+            textTransform: "uppercase",
+            color: "#211c12",
+            background: "#f3eee1",
+            border: "1px solid #d6cbb2",
+            padding: big ? "1mm 3mm" : "0.6mm 2.2mm",
+            borderRadius: 999,
+          }}
+        >
+          Ejemplar {unit.unit} de {unit.unitTotal}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function ZoneLabelsSheet({
   zoneName,
@@ -35,13 +161,9 @@ export function ZoneLabelsSheet({
   const [layoutIdx, setLayoutIdx] = useState(1);
   const layout = LAYOUTS[layoutIdx];
 
-  function chunk<T>(arr: T[], size: number): T[][] {
-    const out: T[][] = [];
-    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-    return out;
-  }
-
-  const pages = chunk(items, layout.perPage);
+  /* Acumulables → tantas etiquetas numeradas como unidades existan. */
+  const { units, truncated } = useMemo(() => expandLabelUnits(items), [items]);
+  const pages = useMemo(() => chunkPages(units, layout.perPage), [units, layout.perPage]);
 
   if (items.length === 0) {
     return (
@@ -84,7 +206,7 @@ export function ZoneLabelsSheet({
             <span className="hidden sm:inline">Volver</span>
           </Link>
           <span className="hidden text-xs text-cream/60 sm:block">
-            {items.length} etiquetas · {zoneName}
+            {units.length} etiquetas · {zoneName} · carta
           </span>
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden overflow-hidden rounded-full border border-white/20 sm:flex">
@@ -105,7 +227,7 @@ export function ZoneLabelsSheet({
               className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-gold px-4 py-2 text-xs font-bold text-ink shadow-lift transition hover:bg-gold-soft"
             >
               <Printer className="h-4 w-4" strokeWidth={2.2} />
-              Imprimir {items.length} etiquetas
+              Imprimir {units.length} etiquetas
             </button>
           </div>
         </div>
@@ -129,20 +251,27 @@ export function ZoneLabelsSheet({
       </div>
 
       <p className="no-print px-4 pb-2 pt-1 text-center text-[0.65rem] text-ink-soft sm:pb-3">
-        Vista previa A4 · las líneas punteadas son guías de corte · para PDF
-        elige «Guardar como PDF» en el diálogo de impresión
+        Vista previa en tamaño carta (216 × 279 mm) · las líneas punteadas son
+        guías de corte · para PDF elige «Guardar como PDF» en el diálogo de impresión
       </p>
+      {truncated > 0 && (
+        <p className="no-print px-4 pb-2 text-center text-[0.66rem] font-semibold text-amber-700">
+          <Ruler className="mr-1 inline h-3 w-3" />
+          Algún artículo supera 300 unidades: sus etiquetas se han recortado a 300 por seguridad.
+        </p>
+      )}
 
-      {/* ---------- Hoja A4 ---------- */}
+      {/* ---------- Hojas carta ---------- */}
       <div className="px-4 pb-10 print:p-0">
-        {pages.map((pageItems, pageIndex) => (
+        {pages.map((pageUnits, pageIndex) => (
           <div
             key={pageIndex}
-            className="mx-auto mb-4 max-w-[784px] break-after-page bg-white shadow-lift print:mb-0 print:shadow-none"
+            className="sheet-page mx-auto mb-4 max-w-[816px] bg-white shadow-lift print:mb-0 print:max-w-none print:shadow-none"
+            style={{ boxSizing: "border-box" }}
           >
             {/* Encabezado de zona en cada hoja */}
             <div
-              className="flex items-center gap-3 border-b-2 px-6 py-3"
+              className="flex items-center gap-3 border-b-2 px-6 py-2.5"
               style={{ borderColor: zoneColor }}
             >
               <span
@@ -164,72 +293,35 @@ export function ZoneLabelsSheet({
 
             {/* Rejilla de etiquetas */}
             <div
-              className="grid gap-2 p-4"
               style={{
-                gridTemplateColumns: `repeat(${layout.cols}, minmax(0, 1fr))`,
+                display: "grid",
+                gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
+                gridTemplateRows: `repeat(${layout.rows}, 1fr)`,
+                gap: "2.5mm",
+                padding: "3.5mm",
+                height: "243mm",
+                boxSizing: "border-box",
               }}
             >
-              {pageItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex min-h-[52mm] flex-col items-center justify-center border border-dashed border-stone-300 p-2 text-center"
-                >
-                  <p className="mb-1.5 font-sans text-[0.55rem] uppercase tracking-[0.15em] text-stone-500">
-                    {parishName}
-                  </p>
-                  <QRCodeSVG
-                    value={`${baseUrl}/escaner?code=${item.code}`}
-                    size={layout.qr}
-                    level="M"
-                    fgColor="#000000"
-                    bgColor="#ffffff"
-                  />
-                  <p
-                    className="mt-2 font-mono font-bold tracking-widest"
-                    style={{ fontSize: `${layout.codeSize}px` }}
-                  >
-                    {item.code}
-                  </p>
-                  <p
-                    className="mt-0.5 line-clamp-2 font-sans font-semibold leading-tight"
-                    style={{ fontSize: `${layout.nameSize}px` }}
-                  >
-                    {item.name}
-                  </p>
-                  {item.itemType === "CONTABLE" && item.quantity > 1 && (
-                    <p className="mt-0.5 text-[0.55rem] font-medium text-stone-500">
-                      {item.quantity} uds.
-                    </p>
-                  )}
-                </div>
+              {pageUnits.map((u) => (
+                <ZoneLabel
+                  key={u.key}
+                  unit={u}
+                  baseUrl={baseUrl}
+                  parishName={parishName}
+                  zoneName={zoneName}
+                  zoneColor={zoneColor}
+                  layout={layout}
+                />
               ))}
-              {/* Rellenar huecos vacíos de la última página */}
+              {/* Huecos vacíos de la última página */}
               {pageIndex === pages.length - 1 &&
-                Array.from({
-                  length:
-                    layout.perPage -
-                    pageItems.length -
-                    (layout.perPage - pageItems.length) % layout.cols +
-                    ((layout.perPage - pageItems.length) % layout.cols === 0
-                      ? 0
-                      : layout.cols -
-                        ((layout.perPage - pageItems.length) % layout.cols)),
-                })
-                  .slice(0, layout.perPage - pageItems.length)
-                  .map((_, i) => (
-                    <div
-                      key={`pad-${i}`}
-                      className="min-h-[52mm] border border-dashed border-stone-200"
-                    />
-                  ))}
-            </div>
-
-            {/* Pie de página */}
-            <div className="border-t px-6 py-2 text-center">
-              <p className="font-sans text-[0.55rem] text-stone-400">
-                Generado automáticamente · {parishName} ·{" "}
-                {new Date().toLocaleDateString("es-ES")}
-              </p>
+                Array.from({ length: layout.perPage - pageUnits.length }).map((_, i) => (
+                  <div
+                    key={`pad-${i}`}
+                    style={{ border: "1px dashed #e7e5e4", boxSizing: "border-box" }}
+                  />
+                ))}
             </div>
           </div>
         ))}

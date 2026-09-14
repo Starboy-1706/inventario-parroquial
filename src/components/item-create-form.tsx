@@ -10,6 +10,7 @@ import {
   Church,
   Loader2,
   PackagePlus,
+  Ruler,
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
@@ -29,7 +30,7 @@ import { cn } from "@/lib/utils";
 type FieldErrors = Record<string, string>;
 
 /** Dinero en formato español: acepta "1.200,50", "1200.50" o "1200". */
-function parseMoneyInput(raw: string): { ok: boolean; value: number | null } {
+export function parseMoneyInput(raw: string): { ok: boolean; value: number | null } {
   const trimmed = raw.trim();
   if (!trimmed) return { ok: true, value: null };
   const clean = trimmed.replace(/\s|€/g, "");
@@ -40,6 +41,17 @@ function parseMoneyInput(raw: string): { ok: boolean; value: number | null } {
     return { ok: false, value: null };
   }
   return { ok: true, value: num };
+}
+
+/** Medida física en cm: acepta "30", "30,5" o "30.5". Vacío → null. */
+export function parseDimInput(raw: string): { ok: boolean; value: number | null } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: true, value: null };
+  const num = Number(trimmed.replace(/\s|cm/gi, "").replace(",", "."));
+  if (!Number.isFinite(num) || num < 0 || num > 99_999.9) {
+    return { ok: false, value: null };
+  }
+  return { ok: true, value: Math.round(num * 10) / 10 };
 }
 
 export function ItemCreateForm({
@@ -106,6 +118,13 @@ export function ItemCreateForm({
       nextErrors.acquisitionDate = "Fecha no válida.";
     }
 
+    const dimLength = parseDimInput(String(fd.get("dimLengthCm") ?? ""));
+    const dimWidth = parseDimInput(String(fd.get("dimWidthCm") ?? ""));
+    const dimHeight = parseDimInput(String(fd.get("dimHeightCm") ?? ""));
+    if (!dimLength.ok || !dimWidth.ok || !dimHeight.ok) {
+      nextErrors.dims = "Medida no válida. Usa números: 30 · 30,5 · 30.5";
+    }
+
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
       setServerError("Revisa los campos marcados en rojo antes de guardar.");
@@ -130,6 +149,9 @@ export function ItemCreateForm({
       condition: fd.get("condition"),
       acquisitionDate: acquisitionDate || null,
       estimatedValue: parsedMoney.value,
+      dimLengthCm: dimLength.value,
+      dimWidthCm: dimWidth.value,
+      dimHeightCm: dimHeight.value,
       description: String(fd.get("description") ?? ""),
       notes: String(fd.get("notes") ?? ""),
       photoId: photoIds[0] ?? null,
@@ -466,6 +488,46 @@ export function ItemCreateForm({
                 )}
               </div>
             </div>
+          </section>
+
+          {/* ---------- Medidas del artículo ---------- */}
+          <section className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+            <h2 className="flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.2em] text-gold-deep">
+              <Ruler className="h-3.5 w-3.5" />
+              Medidas del artículo (cm)
+            </h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+              Largo × ancho × alto. Todas opcionales: rellena solo las que conozcas.
+            </p>
+            <div className="mt-4 grid grid-cols-3 gap-3 sm:gap-4">
+              <Field label="Largo (cm)">
+                <input
+                  name="dimLengthCm"
+                  inputMode="decimal"
+                  placeholder="30"
+                  className={cn(inputCls, "text-center font-mono", errors.dims && "border-red-300 ring-red-100")}
+                />
+              </Field>
+              <Field label="Ancho (cm)">
+                <input
+                  name="dimWidthCm"
+                  inputMode="decimal"
+                  placeholder="20"
+                  className={cn(inputCls, "text-center font-mono", errors.dims && "border-red-300 ring-red-100")}
+                />
+              </Field>
+              <Field label="Alto (cm)">
+                <input
+                  name="dimHeightCm"
+                  inputMode="decimal"
+                  placeholder="15"
+                  className={cn(inputCls, "text-center font-mono", errors.dims && "border-red-300 ring-red-100")}
+                />
+              </Field>
+            </div>
+            {errors.dims && (
+              <p className="mt-2 text-xs font-medium text-red-600">{errors.dims}</p>
+            )}
           </section>
 
           {/* ---------- Fotografía ---------- */}

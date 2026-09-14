@@ -123,6 +123,9 @@ export async function POST(request: NextRequest) {
           acquisitionDate: data.acquisitionDate,
           estimatedValue:
             data.estimatedValue !== null ? data.estimatedValue.toFixed(2) : null,
+          dimLengthCm: data.dimLengthCm !== null ? String(data.dimLengthCm) : null,
+          dimWidthCm: data.dimWidthCm !== null ? String(data.dimWidthCm) : null,
+          dimHeightCm: data.dimHeightCm !== null ? String(data.dimHeightCm) : null,
           notes: data.notes,
         })
         .returning();
