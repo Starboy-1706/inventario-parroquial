@@ -54,10 +54,21 @@ const moneyField = z.unknown().transform((value, ctx) => {
   return parsed;
 });
 
+/** Medida física opcional (cm para artículos, m para zonas). Vacío → null. */
+const dimField = (max: number) =>
+  z
+    .union([z.coerce.number().min(0).max(max), z.literal(""), z.null(), z.undefined()])
+    .transform((v) => (typeof v === "number" && Number.isFinite(v) ? v : null));
+
+export const ITEM_DIM_MAX_CM = 99_999.9;
+export const ZONE_DIM_MAX_M = 999.99;
+
 export const itemCreateSchema = z
   .object({
     name: z.string().trim().min(1, "El nombre es obligatorio.").max(160),
-    description: nullableText(2_000),
+    // Descripción prácticamente sin límite: la columna `text` de PostgreSQL
+    // no tiene tope real; se conserva un máximo de salvaguarda anti-abuso.
+    description: nullableText(100_000),
     notes: nullableText(2_000),
     category: z.string().trim().min(1).max(120),
     zoneId: z.coerce.number().int().positive(),
@@ -73,6 +84,17 @@ export const itemCreateSchema = z
     acquisitionDate: dateField,
     estimatedValue: moneyField,
     externalBarcode: nullableText(128),
+    dimLengthCm: dimField(ITEM_DIM_MAX_CM),
+    dimWidthCm: dimField(ITEM_DIM_MAX_CM),
+    dimHeightCm: dimField(ITEM_DIM_MAX_CM),
+    brand: nullableText(120),
+    model: nullableText(120),
+    serialNumber: nullableText(120),
+    material: nullableText(160),
+    color: nullableText(80),
+    weightKg: dimField(100_000),
+    supplier: nullableText(160),
+    warrantyUntil: dateField,
   })
   .transform((data) => ({
     ...data,
@@ -84,7 +106,7 @@ export const itemUpdateSchema = z
   .object({
     version: z.coerce.number().int().positive(),
     name: z.string().trim().min(1).max(160).optional(),
-    description: nullableText(2_000).optional(),
+    description: nullableText(100_000).optional(),
     notes: nullableText(2_000).optional(),
     category: z.string().trim().min(1).max(120).optional(),
     zoneId: z.coerce.number().int().positive().optional(),
@@ -100,16 +122,30 @@ export const itemUpdateSchema = z
     acquisitionDate: dateField.optional(),
     estimatedValue: moneyField.optional(),
     externalBarcode: nullableText(128).optional(),
+    dimLengthCm: dimField(ITEM_DIM_MAX_CM).optional(),
+    dimWidthCm: dimField(ITEM_DIM_MAX_CM).optional(),
+    dimHeightCm: dimField(ITEM_DIM_MAX_CM).optional(),
+    brand: nullableText(120).optional(),
+    model: nullableText(120).optional(),
+    serialNumber: nullableText(120).optional(),
+    material: nullableText(160).optional(),
+    color: nullableText(80).optional(),
+    weightKg: dimField(100_000).optional(),
+    supplier: nullableText(160).optional(),
+    warrantyUntil: dateField.optional(),
     deletedReason: nullableText(500).optional(),
   })
   .strict();
 
 export const zoneSchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio.").max(100),
-  description: nullableText(500),
+  description: nullableText(100_000),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   icon: z.string().trim().min(1).max(40),
   photoId: nullablePositiveId,
+  dimLengthM: dimField(ZONE_DIM_MAX_M),
+  dimWidthM: dimField(ZONE_DIM_MAX_M),
+  dimHeightM: dimField(ZONE_DIM_MAX_M),
 });
 
 export function zodErrorMessage(error: z.ZodError) {

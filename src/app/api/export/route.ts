@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { asc, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { items, zones } from "@/db/schema";
+import { items, storageLocations, zones } from "@/db/schema";
 import { apiAuthGuard } from "@/lib/auth";
 import { CONDITION_LABELS, STATUS_LABELS, type ItemCondition, type ItemStatus } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
@@ -26,9 +26,11 @@ export async function GET() {
     .select({
       item: items,
       zoneName: zones.name,
+      locationName: storageLocations.name,
     })
     .from(items)
     .innerJoin(zones, eq(items.zoneId, zones.id))
+    .leftJoin(storageLocations, eq(items.locationId, storageLocations.id))
     .where(ne(items.status, "BAJA"))
     .orderBy(asc(zones.name), asc(items.code));
 
@@ -36,6 +38,20 @@ export async function GET() {
     "Código",
     "Nombre",
     "Zona",
+    "Ubicación exacta",
+    "Lugar exacto",
+    "Marca",
+    "Modelo",
+    "Nº de serie",
+    "Material",
+    "Color / acabado",
+    "Largo (cm)",
+    "Ancho (cm)",
+    "Alto (cm)",
+    "Peso (kg)",
+    "Proveedor",
+    "Garantía hasta",
+    "Código de barras",
     "Tipo",
     "Cantidad",
     "Stock Mínimo",
@@ -51,11 +67,25 @@ export async function GET() {
 
   const lines = [headers.map((h) => `"${h}"`).join(";")];
 
-  for (const { item, zoneName } of rows) {
+  for (const { item, zoneName, locationName } of rows) {
     const row = [
       escapeCsv(item.code),
       escapeCsv(item.name),
       escapeCsv(zoneName),
+      escapeCsv(locationName ?? ""),
+      escapeCsv(item.locationNote ?? ""),
+      escapeCsv(item.brand ?? ""),
+      escapeCsv(item.model ?? ""),
+      escapeCsv(item.serialNumber ?? ""),
+      escapeCsv(item.material ?? ""),
+      escapeCsv(item.color ?? ""),
+      escapeCsv(item.dimLengthCm ?? ""),
+      escapeCsv(item.dimWidthCm ?? ""),
+      escapeCsv(item.dimHeightCm ?? ""),
+      escapeCsv(item.weightKg ?? ""),
+      escapeCsv(item.supplier ?? ""),
+      escapeCsv(item.warrantyUntil ? formatDate(item.warrantyUntil) : ""),
+      escapeCsv(item.externalBarcode ?? ""),
       escapeCsv(item.itemType === "UNICO" ? "Pieza única" : "Acumulable"),
       escapeCsv(item.quantity),
       escapeCsv(item.minQuantity || ""),

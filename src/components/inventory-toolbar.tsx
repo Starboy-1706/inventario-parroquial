@@ -53,7 +53,7 @@ export function InventoryToolbar({ zones }: { zones: Zone[] }) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nombre, código o categoría…"
+          placeholder="Buscar por nombre, código, marca, modelo, nº de serie…"
           className="w-full rounded-full border border-line bg-cream py-2.5 pl-10 pr-4 text-sm text-ink shadow-card outline-none transition placeholder:text-ink-faint focus:border-gold focus:ring-2 focus:ring-gold/20"
         />
       </div>

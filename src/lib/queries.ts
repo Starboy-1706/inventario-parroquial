@@ -23,6 +23,9 @@ export type ZoneWithCount = {
   color: string;
   icon: string;
   photoId: number | null;
+  dimLengthM: string | null;
+  dimWidthM: string | null;
+  dimHeightM: string | null;
   itemCount: number;
   trashCount: number;
   totalCount: number;
@@ -40,6 +43,9 @@ export async function getZonesWithCounts(): Promise<ZoneWithCount[]> {
       color: zones.color,
       icon: zones.icon,
       photoId: zones.photoId,
+      dimLengthM: zones.dimLengthM,
+      dimWidthM: zones.dimWidthM,
+      dimHeightM: zones.dimHeightM,
       itemCount: sql<number>`count(${items.id}) filter (where ${items.deletedAt} is null)::int`,
       trashCount: sql<number>`count(${items.id}) filter (where ${items.deletedAt} is not null)::int`,
       totalCount: sql<number>`count(${items.id})::int`,
@@ -80,6 +86,12 @@ function buildItemConditions(filters: ItemFilters) {
         ilike(items.code, q),
         ilike(items.category, q),
         ilike(items.externalBarcode, q),
+        // Búsqueda también por ficha técnica y descripción
+        ilike(items.brand, q),
+        ilike(items.model, q),
+        ilike(items.serialNumber, q),
+        ilike(items.material, q),
+        ilike(items.description, q),
         sql`exists (select 1 from item_code_aliases a where a.item_id = ${items.id} and a.code ilike ${q})`,
       )!,
     );

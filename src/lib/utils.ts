@@ -69,6 +69,59 @@ export function timeAgo(value: string | Date) {
   return formatDate(d);
 }
 
+/** Número con formato español: 1205.5 → "1.205,5" (sin decimales de relleno). */
+function formatMeasure(value: string | number | null | undefined): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(n)) return null;
+  return new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 }).format(n);
+}
+
+/**
+ * Medidas de un artículo: largo × ancho × alto en centímetros.
+ * Solo incluye las dimensiones informadas. Devuelve null si no hay ninguna.
+ */
+export function formatItemDimensions(item: {
+  dimLengthCm?: string | number | null;
+  dimWidthCm?: string | number | null;
+  dimHeightCm?: string | number | null;
+}): string | null {
+  const parts = [
+    formatMeasure(item.dimLengthCm),
+    formatMeasure(item.dimWidthCm),
+    formatMeasure(item.dimHeightCm),
+  ].filter((p): p is string => p !== null);
+  return parts.length ? `${parts.join(" × ")} cm` : null;
+}
+
+/**
+ * Medidas de una zona o área: largo × ancho (× alto) en metros.
+ * Devuelve null si no hay ninguna dimensión informada.
+ */
+export function formatZoneDimensions(zone: {
+  dimLengthM?: string | number | null;
+  dimWidthM?: string | number | null;
+  dimHeightM?: string | number | null;
+}): string | null {
+  const parts = [
+    formatMeasure(zone.dimLengthM),
+    formatMeasure(zone.dimWidthM),
+    formatMeasure(zone.dimHeightM),
+  ].filter((p): p is string => p !== null);
+  return parts.length ? `${parts.join(" × ")} m` : null;
+}
+
+/** Superficie de la zona en m² a partir de largo × ancho (null si falta alguno). */
+export function zoneAreaM2(zone: {
+  dimLengthM?: string | number | null;
+  dimWidthM?: string | number | null;
+}): string | null {
+  const l = zone.dimLengthM ? Number(zone.dimLengthM) : NaN;
+  const w = zone.dimWidthM ? Number(zone.dimWidthM) : NaN;
+  if (!Number.isFinite(l) || !Number.isFinite(w)) return null;
+  return formatMeasure(Math.round(l * w * 100) / 100);
+}
+
 /** Extrae un código de inventario desde texto escaneado (código plano o URL). */
 export function extractCode(raw: string): string {
   const text = raw.trim();

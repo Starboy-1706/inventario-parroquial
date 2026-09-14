@@ -30,6 +30,52 @@ zonas**, con **códigos únicos escaneables (QR/barras)** por artículo y un
   ajuste, traslado, cambio de estado) queda registrada con fecha y nota, en
   **transacciones ACID**.
 
+## Novedades de esta versión
+
+- **Sin ventanas flotantes** — Todos los formularios y confirmaciones (alta y
+  edición de artículos y zonas, eliminación, restauración desde la papelera,
+  inicio y cierre de recuentos) se han convertido en **páginas completas** con
+  su propia URL: `/inventario/[id]/editar`, `/inventario/[id]/eliminar`,
+  `/zonas/[id]/editar`, `/zonas/[id]/eliminar`, `/recuento/nueva`,
+  `/recuento/[id]/finalizar`, `/inventario/[id]/restaurar`,
+  `/inventario/[id]/borrar`. Navegación con botón atrás del navegador garantizada.
+- **Descripción siempre visible** — La descripción del objeto aparece destacada
+  en la ficha y también en el listado del inventario.
+- **Medidas configurables** — Zonas: largo × ancho (× alto) en **metros** (con
+  cálculo automático de m²). Artículos: largo × ancho × alto en **centímetros**.
+  Se muestran en tarjetas, fichas y etiquetas grandes.
+- **Impresión en tamaño carta** — Todas las hojas de etiquetas usan papel
+  **carta (216 × 279 mm)** con márgenes de 10 mm y guías de corte.
+- **La zona en cada etiqueta** — Toda etiqueta impresa lleva una pastilla de
+  color con el **nombre de la zona** a la que pertenece el artículo.
+- **Etiquetas numeradas por unidad** — Los artículos **acumulables** imprimen
+  automáticamente tantas etiquetas como unidades existan, numeradas
+  «Ejemplar 1 de N … N de N», en la ficha individual, por zona y por lote
+  (límite de seguridad: 300 por artículo).
+
+## Ficha técnica, ubicaciones exactas y descripciones
+
+- **Ficha técnica completa por artículo** — Marca, modelo, nº de serie, código
+  de barras, material, color/acabado, medidas, peso, proveedor/procedencia y
+  garantía, en una tabla clara con indicador de «% completa».
+- **Ubicaciones exactas anidadas** — Armarios, archiveros, estanterías,
+  estantes, cajones, cajas, vitrinas, percheros, baúles, repisas, mesas y cajas
+  fuertes. Se gestionan por zona en `/zonas/[id]/ubicaciones` y admiten
+  jerarquía (Armario → Balda 2 → Caja de corporales). La ficha muestra la ruta
+  completa: `Armario de ornamentos → Cajón de corporales · fondo derecho`.
+- **Página de detalle de zona** (`/zonas/[id]`) — Descripción, fotografía,
+  medidas y superficie en m², árbol de ubicaciones y listado de artículos con
+  marca, modelo, descripción y medidas.
+- **Descripciones siempre visibles y sin límite de caracteres** — De
+  artículos (ficha, listado y detalle de zona) y de zonas (tarjeta y página de
+  detalle). Antes 500/2.000 caracteres; ahora solo una salvaguarda de 100.000.
+- **Búsqueda ampliada** — Además de nombre y código, busca por marca, modelo,
+  nº de serie, material y descripción.
+- **Exportación CSV enriquecida** — Incluye ubicación exacta, lugar exacto,
+  marca, modelo, nº de serie, material, color, medidas, peso, proveedor,
+  garantía y código de barras.
+- **Etiqueta grande** — Muestra además marca · modelo y la ubicación exacta.
+
 ## Seguridad por clave
 
 - Ventana previa en `/acceso`: una persona sin sesión no recibe páginas ni

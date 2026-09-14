@@ -8,6 +8,7 @@ import {
   Check,
   Loader2,
   MapPinPlus,
+  Ruler,
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
@@ -26,6 +27,9 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
   const [color, setColor] = useState<string>(ZONE_COLORS[0]);
   const [icon, setIcon] = useState<string>("church");
   const [photoId, setPhotoId] = useState<number | null>(null);
+  const [dimLength, setDimLength] = useState("");
+  const [dimWidth, setDimWidth] = useState("");
+  const [dimHeight, setDimHeight] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<Zone | null>(null);
@@ -41,13 +45,36 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
       setError("Ya existe una zona con ese nombre.");
       return;
     }
+    const parseDimM = (raw: string): { ok: boolean; value: number | null } => {
+      const t = raw.trim();
+      if (!t) return { ok: true, value: null };
+      const n = Number(t.replace(/\s|m/gi, "").replace(",", "."));
+      if (!Number.isFinite(n) || n < 0 || n > 999.99) return { ok: false, value: null };
+      return { ok: true, value: Math.round(n * 100) / 100 };
+    };
+    const len = parseDimM(dimLength);
+    const wid = parseDimM(dimWidth);
+    const hei = parseDimM(dimHeight);
+    if (!len.ok || !wid.ok || !hei.ok) {
+      setError("Las medidas del área deben ser números entre 0 y 999,99 metros (ej. 12,5).");
+      return;
+    }
     setPending(true);
     setError(null);
     try {
       const res = await secureFetch("/api/zones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmedName, description: description.trim(), color, icon, photoId }),
+        body: JSON.stringify({
+          name: trimmedName,
+          description: description.trim(),
+          color,
+          icon,
+          photoId,
+          dimLengthM: len.value,
+          dimWidthM: wid.value,
+          dimHeightM: hei.value,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -95,6 +122,9 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
                 setColor(ZONE_COLORS[0]);
                 setIcon("church");
                 setPhotoId(null);
+                setDimLength("");
+                setDimWidth("");
+                setDimHeight("");
                 setCreated(null);
                 setError(null);
               }}
@@ -167,14 +197,57 @@ export function ZoneCreateForm({ existingZones }: { existingZones: Zone[] }) {
                 className={inputCls}
               />
             </Field>
-            <Field label="Descripción" hint="Qué se guarda o realiza en esta estancia">
+            <Field
+              label="Descripción"
+              hint={`Sin límite de caracteres${description.length ? ` · ${description.length.toLocaleString("es-ES")} escritos` : ""}`}
+            >
               <textarea
-                rows={2}
-                maxLength={500}
+                rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ej. Vasos sagrados, ornamentos y objetos de culto"
-                className={cn(inputCls, "resize-none")}
+                placeholder="Qué se guarda aquí, historia, detalles de la estancia…"
+                className={cn(inputCls, "resize-y")}
+              />
+            </Field>
+          </div>
+        </section>
+
+        {/* ---------- Medidas del área ---------- */}
+        <section className="rounded-3xl border border-line bg-cream p-5 shadow-card sm:p-6">
+          <h2 className="flex items-center gap-2 text-[0.66rem] font-bold uppercase tracking-[0.2em] text-gold-deep">
+            <Ruler className="h-3.5 w-3.5" />
+            Medidas del área (metros)
+          </h2>
+          <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
+            Largo × ancho (× alto) de la estancia. Opcional: con largo y ancho se
+            calcula automáticamente la superficie en m².
+          </p>
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:gap-4">
+            <Field label="Largo (m)">
+              <input
+                inputMode="decimal"
+                value={dimLength}
+                onChange={(e) => setDimLength(e.target.value)}
+                placeholder="12"
+                className={cn(inputCls, "text-center font-mono")}
+              />
+            </Field>
+            <Field label="Ancho (m)">
+              <input
+                inputMode="decimal"
+                value={dimWidth}
+                onChange={(e) => setDimWidth(e.target.value)}
+                placeholder="8"
+                className={cn(inputCls, "text-center font-mono")}
+              />
+            </Field>
+            <Field label="Alto (m)">
+              <input
+                inputMode="decimal"
+                value={dimHeight}
+                onChange={(e) => setDimHeight(e.target.value)}
+                placeholder="3,5"
+                className={cn(inputCls, "text-center font-mono")}
               />
             </Field>
           </div>

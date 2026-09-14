@@ -1,42 +1,26 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, RotateCcw, Trash2 } from "lucide-react";
-import { secureFetch } from "@/lib/secure-fetch";
-import { Button, Modal, inputCls } from "@/components/ui";
+
+import Link from "next/link";
+import { RotateCcw, Trash2 } from "lucide-react";
 
 export function TrashActions({ id, code }: { id: number; code: string }) {
-  const router = useRouter();
-  const [mode, setMode] = useState<"restore" | "delete" | null>(null);
-  const [confirmation, setConfirmation] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function execute() {
-    if (confirmation.trim().toUpperCase() !== code) return;
-    setPending(true); setError(null);
-    const res = await secureFetch(`/api/items/${id}/trash`, {
-      method: mode === "restore" ? "POST" : "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirmationCode: code }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) { setError(data.error ?? "No se pudo completar la operación."); setPending(false); return; }
-    setMode(null); router.refresh();
-  }
-
+  void code;
   return (
-    <>
-      <div className="mt-3 flex gap-2 sm:mt-0">
-        <Button size="sm" variant="outline" onClick={() => { setMode("restore"); setConfirmation(""); }}><RotateCcw className="h-3.5 w-3.5" />Restaurar</Button>
-        <Button size="sm" variant="danger" onClick={() => { setMode("delete"); setConfirmation(""); }}><Trash2 className="h-3.5 w-3.5" />Borrar</Button>
-      </div>
-      <Modal open={mode !== null} onClose={() => setMode(null)} title={mode === "restore" ? "Restaurar artículo" : "Borrado definitivo"} subtitle={`Confirma escribiendo ${code}`}>
-        <p className="text-sm text-ink-soft">{mode === "restore" ? "El artículo volverá al inventario activo." : "Esta acción borrará definitivamente la ficha y su historial. No puede deshacerse."}</p>
-        <input value={confirmation} onChange={(e) => setConfirmation(e.target.value.toUpperCase())} placeholder={code} className={`${inputCls} mt-4 text-center font-mono font-bold tracking-widest`} />
-        {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-        <div className="mt-5 flex justify-end gap-2"><Button variant="ghost" onClick={() => setMode(null)}>Cancelar</Button><Button variant={mode === "delete" ? "danger" : "dark"} disabled={pending || confirmation.trim() !== code} onClick={() => void execute()}>{pending && <Loader2 className="h-4 w-4 animate-spin" />}{mode === "restore" ? "Restaurar" : "Eliminar definitivamente"}</Button></div>
-      </Modal>
-    </>
+    <div className="mt-3 flex gap-2 sm:mt-0">
+      <Link
+        href={`/inventario/${id}/restaurar`}
+        className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-cream px-3.5 py-1.5 text-xs font-semibold text-ink transition hover:border-ink/25"
+      >
+        <RotateCcw className="h-3.5 w-3.5" />
+        Restaurar
+      </Link>
+      <Link
+        href={`/inventario/${id}/borrar`}
+        className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+        Borrar
+      </Link>
+    </div>
   );
 }

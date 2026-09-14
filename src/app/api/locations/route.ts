@@ -3,6 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { storageLocations, zones } from "@/db/schema";
 import { apiAuthGuard } from "@/lib/auth";
+import { LOCATION_KINDS } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   const denied = await apiAuthGuard(); if (denied) return denied;
@@ -16,6 +17,7 @@ export async function POST(request: NextRequest) {
   if (!name || name.length > 100 || !Number.isInteger(zoneId)) return NextResponse.json({ error: "Datos de ubicación no válidos." }, { status: 400 });
   const [zone] = await db.select({ id: zones.id }).from(zones).where(eq(zones.id, zoneId)); if (!zone) return NextResponse.json({ error: "Zona no encontrada." }, { status: 400 });
   if (parentId) { const [parent] = await db.select().from(storageLocations).where(eq(storageLocations.id, parentId)); if (!parent || parent.zoneId !== zoneId) return NextResponse.json({ error: "La ubicación padre no pertenece a esa zona." }, { status: 400 }); }
-  try { const [row] = await db.insert(storageLocations).values({ zoneId, parentId, name, kind: String(body.kind ?? "OTRO").slice(0, 30) }).returning(); return NextResponse.json(row, { status: 201 }); }
-  catch { return NextResponse.json({ error: "Ya existe esa ubicación." }, { status: 409 }); }
+  const kind = LOCATION_KINDS.includes(body?.kind) ? body.kind : "OTRO";
+  try { const [row] = await db.insert(storageLocations).values({ zoneId, parentId, name, kind }).returning(); return NextResponse.json(row, { status: 201 }); }
+  catch { return NextResponse.json({ error: "Ya existe esa ubicación con ese nombre." }, { status: 409 }); }
 }
